@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SigniMagic Login</title>
+<!-- ✅ NEW: PWA Support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: url('background.png') no-repeat center center/cover;
+}
+
+body::before {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.65);
+    top: 0;
+    left: 0;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    width: 380px;
+    padding: 30px;
+    border-radius: 20px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(15px);
+    text-align: center;
+    box-shadow: 0 0 30px rgba(0, 198, 255, 0.3);
+}
+
+.logo {
+    width: 120px;
+    margin-bottom: 15px;
+}
+
+h2 {
+    color: white;
+    margin-bottom: 5px;
+}
+
+.subtitle {
+    color: #ccc;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.input-box {
+    position: relative;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.15);
+    color: white;
+    font-size: 14px;
+}
+
+input::placeholder {
+    color: #ddd;
+}
+
+.eye {
+    position: absolute;
+    right: 12px;
+    top: 22px;
+    cursor: pointer;
+}
+
+.links {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #ccc;
+    margin-bottom: 10px;
+}
+
+.links a {
+    color: #00c6ff;
+    text-decoration: none;
+}
+
+button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(45deg, #00c6ff, #0072ff);
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.3s;
+    box-shadow: 0 0 10px rgba(0,198,255,0.6);
+}
+
+button:hover {
+    transform: scale(1.03);
+}
+
+.google-btn {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    border-radius: 10px;
+    background: white;
+    color: #333;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.google-btn img {
+    width: 20px;
+    margin-right: 10px;
+}
+
+.google-btn:hover {
+    background: #f1f1f1;
+}
+
+#error {
+    color: #ff4d4d;
+    font-size: 13px;
+    margin-top: 10px;
+}
+#error {
+    color: #dc3545;
+    font-size: 13px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #ffe0e0;
+    border-radius: 8px;
+    display: none;
+}
+
+#error.show {
+    display: block;
+}
+
+.success-popup {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.success-popup.show {
+    display: flex;
+}
+
+.popup-content {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    max-width: 400px;
+    animation: popupSlide 0.3s ease;
+}
+
+@keyframes popupSlide {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.success-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+}
+
+.popup-content h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 24px;
+}
+
+.popup-content p {
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 14px;
+}
+
+.popup-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 40px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.popup-btn:hover {
+    transform: scale(1.05);
+}
+
+</style>
+</head>
+<body>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC2JaKO_UryvZSBNUk193tXUnxr9zYSTEY",
+  authDomain: "signimagic-8e3a7.firebaseapp.com",
+  projectId: "signimagic-8e3a7",
+  storageBucket: "signimagic-8e3a7.firebasestorage.app",
+  messagingSenderId: "203818581183",
+  appId: "1:203818581183:web:62a4712a67027b7453da0a"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+function togglePassword() {
+    let pass = document.getElementById("password");
+    pass.type = pass.type === "password" ? "text" : "password";
+}
+function showSuccessPopup(redirectUrl) {
+    const popup = document.getElementById("successPopup");
+    popup.classList.add("show");
+
+    document.getElementById("popupOkBtn").onclick = function() {
+        window.location.href = redirectUrl;
+    };
+
+    setTimeout(() => {
+        window.location.href = redirectUrl;
+    }, 3000);
+}
+function showError(message) {
+    const errorDiv = document.getElementById("error");
+    errorDiv.innerText = message;
+    errorDiv.classList.add("show");
+
+    setTimeout(() => {
+        errorDiv.classList.remove("show");
+    }, 4000);
+}
+
+
+// ✅ Email Login - Increased delay to 2000ms (2 seconds)
+function validateForm(event) {
+    event.preventDefault();
+
+    let email = document.getElementById("email").value.trim();
+    let password = document.getElementById("password").value;
+
+    if(email === "" || password === "") {
+        showError("Please fill all fields!");
+        return false;
+    }
+
+    auth.signInWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+        let user = userCredential.user;
+      // ✅ NEW: Fetch user's name from Firestore and save to localStorage
+        db.collection("users").doc(user.uid).get()
+        .then((doc) => {
+            let name = "User";
+            if (doc.exists && doc.data().name) {
+                name = doc.data().name;
+            } else {
+                // Fallback: use part before @ in email
+                name = user.email.split('@')[0];
+            }
+            localStorage.setItem("username", name);
+            showSuccessPopup("dashboard.html");
+        });
+    })
+    .catch((error) => {
+        showError(error.message);
+    });
+}
+
+// ✅ Sign Up
+function signup(event) {
+    if(event) event.preventDefault(); // 🔥 stop form submit
+
+    let name = document.getElementById("username").value.trim();
+    let email = document.getElementById("email").value.trim();
+    let password = document.getElementById("password").value;
+
+    if(email === "" || password === "") {
+        alert("Please fill all fields!");
+        return;
+    }
+    if (!name) name = email.split('@')[0];
+
+    auth.createUserWithEmailAndPassword(email, password)
+    .then((userCredential) => {
+        let user = userCredential.user;
+
+        db.collection("users").doc(user.uid).set({
+            name: name,
+            email: user.email
+        });
+
+        localStorage.setItem("username", name); 
+        showSuccessPopup("dashboard.html");
+    })
+    .catch((error) => {
+        alert(error.message);
+    });
+}
+
+// ✅ Google Login - Increased delay to 2000ms (2 seconds)
+function googleLogin() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+
+    auth.signInWithPopup(provider)
+    .then((result) => {
+        let user = result.user;
+        db.collection("users").doc(user.uid).set({
+            name: user.displayName,
+            email: user.email,
+            photoURL: user.photoURL,
+            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        localStorage.setItem("username", user.displayName);
+        if (user.photoURL) {
+            localStorage.setItem("profilePic", user.photoURL);
+        }
+        
+
+        showSuccessPopup("dashboard.html");
+    })
+    .catch((error) => {
+        showError(error.message);
+    });
+}
+
+</script>
+<div class="success-popup" id="successPopup">
+    <div class="popup-content">
+        <div class="success-icon">✓</div>
+        <h3>Login Successful!</h3>
+        <p>Redirecting to dashboard...</p>
+        <button class="popup-btn" id="popupOkBtn">OK</button>
+    </div>
+</div>
+
+<div class="container">
+    <img src="images/logo.jpeg" class="logo">
+    <h2>Welcome to SigniMagic</h2>
+    <div class="subtitle">Smart Sign Language Converter ✨</div>
+
+    <form id="loginForm">
+        <input type="text" id="username" placeholder="Enter Your Name">
+        <input type="email" id="email" placeholder="Enter Email">
+        <div class="input-box">
+            <input type="password" id="password" placeholder="Enter Password">
+            <span class="eye" onclick="togglePassword()">👁️</span>
+        </div>
+
+        <div class="links">
+            <span></span>
+            <a href="#">Forgot?</a>
+        </div>
+
+        <p id="error"></p>
+        <button type="submit">Login</button>
+        <button type="button" onclick="signup(event)">Sign Up</button>
+    </form>
+
+    <div class="google-btn" onclick="googleLogin()">
+        <img src="https://cdn-icons-png.flaticon.com/512/2991/2991148.png">
+        Continue with Google
+    </div>
+</div>
+
+<script>
+    document.getElementById("loginForm").addEventListener("submit", validateForm);
+</script>
+<!-- ✅ NEW: Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+
+
+</body>
+</html>

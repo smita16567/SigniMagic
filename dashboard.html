@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignAI | Dashboard</title>
+    <!-- ✅ NEW: PWA Support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 80px;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            padding: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            position: sticky;
+            top: 0;
+        }
+
+        .sidebar-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 24px;
+        }
+
+        .sidebar-icon.active {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+
+        .sidebar-icon:not(.active) {
+            color: #9ca3af;
+        }
+
+        .sidebar-icon:hover:not(.active) {
+            color: #6b7280;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        /* Header */
+        .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    padding: 15px 30px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+/* LEFT LOGO */
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 200px;
+}
+
+.logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+}
+
+.logo-text {
+    font-weight: 600;
+    font-size: 18px;
+}
+
+/* CENTER SEARCH */
+.center {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.search-box {
+    width: 300px;
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+}
+
+/* RIGHT USER */
+.user-section {
+    width: 200px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+}
+        .greeting {
+            text-align: right;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .greeting .name {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        /* Content */
+        .content {
+            padding: 40px;
+        }
+
+        .btn-primary {
+            background: white;
+            color: #7c3aed;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #7c3aed;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.1);
+        }
+
+        .stat-icon {
+            font-size: 32px;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.fire {
+            background: #fef2f2;
+            color: #ef4444;
+        }
+
+        .stat-icon.check {
+            background: #f0fdf4;
+            color: #22c55e;
+        }
+
+        .stat-icon.star {
+            background: #fffbeb;
+            color: #f59e0b;
+        }
+
+        .stat-content h3 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .stat-content p {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        /* Modules Section */
+        .modules-section h2 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: #1f2937;
+        }
+
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .module-card {
+            background: white;
+            border-radius: 12px;
+            padding: 28px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .module-card:hover {
+            border-color: #7c3aed;
+            box-shadow: 0 12px 24px rgba(124, 58, 237, 0.15);
+            transform: translateY(-4px);
+        }
+
+        .module-icon {
+            font-size: 40px;
+            margin-bottom: 16px;
+        }
+
+        .module-card h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .module-card p {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .module-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .module-link.blue {
+            color: #3b82f6;
+        }
+
+        .module-link.red {
+            color: #ef4444;
+        }
+
+        .module-link.green {
+            color: #22c55e;
+        }
+
+        .module-link.orange {
+            color: #f59e0b;
+        }
+
+        .module-link:hover {
+            gap: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+                padding: 12px 0;
+            }
+
+            .sidebar-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+
+            .header {
+                padding: 16px 20px;
+            }
+
+            .search-bar {
+                max-width: none;
+            }
+
+            .user-section {
+                gap: 12px;
+            }
+
+            .greeting {
+                display: none;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .hero {
+                padding: 24px;
+            }
+
+            .hero h1 {
+                font-size: 24px;
+            }
+
+            .modules-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+        .logo-container {
+    text-align: center;
+    padding: 15px 0;
+}
+
+.logo-container img {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+}
+.app-name {
+    margin-top: 5px;
+    font-size: 14px;
+    color: #333;
+}
+
+
+/* Left Side */
+.left-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.icons span {
+    font-size: 20px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+}
+
+.left, .right {
+  width: 200px; /* keeps balance */
+}
+
+.center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.search-box {
+  width: 300px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+}
+
+
+
+
+
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- LEFT SIDEBAR -->
+    <div class="sidebar">
+        <div class="logo-container">
+            <img src="images/logo.jpeg">
+            <div class="app-name">SigniMagic</div>
+        </div>
+
+        <div class="sidebar-icon" onclick="goHome()">🏠</div>
+        <div class="sidebar-icon" onclick="openLearning()">📚</div>
+        <div class="sidebar-icon" onclick="openFavourite()">❤️</div>
+        <div class="sidebar-icon" onclick="openSettings()">⚙️</div>
+        <div class="sidebar-icon" onclick="openLogout()">🔓</div>
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="main-content">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="center">
+                <input type="text" placeholder="Search..." class="search-box">
+            </div>
+
+            <div class="user-section">
+                <div id="greetingText"></div>
+                <img id="profilePic" class="user-avatar" src="icons/icon-192x192.png">
+                <input type="file" id="fileInput" hidden> 
+            </div>
+        </div>
+   
+    <!-- Content -->
+    <div class="content">
+                <!-- Stats -->
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-icon fire">🔥</div>
+                        <div class="stat-content">
+                            <h2 id="dayStreak">0</h2>
+                            <p>Day Streak</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon check">✓</div>
+                        <div class="stat-content">
+                            <h2 id="accuracy">0%</h2>
+                            <p>Accuracy</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon star">⭐</div>
+                        <div class="stat-content">
+                            <h2 id="signsLearned">0</h2>
+                            <p>Signs Learned</p>
+                        </div>
+                    </div>
+                </div>
+             </div>
+                <!-- Core Modules -->
+                <div class="modules-section">
+                    <h2>Core Modules</h2>
+                    <div class="modules-grid">
+                        <div class="module-card">
+                            <div class="module-icon">📹</div> 
+                            <h3>Sign to Speech</h3>
+                            <p>Convert real-time gestures into audio & text.</p>
+                            <a href="STS.HTML" target="_blank" class="module-link blue">Open Scanner →</a>
+                            
+                        </div>
+
+                        <div class="module-card">
+                            <div class="module-icon">🧑</div>
+                            <h3>Speech to Sign</h3>
+                            <p>Speak or type to see 3D Avatar animations.</p>
+                            <a href="speechtosign.html">Talk to Avatar →</a>
+                        </div>
+
+                        <div class="module-card">
+                            <div class="module-icon">⚠️</div>
+                            <h3>Emergency Alert</h3>
+                            <p>High-priority gesture detection for help.</p>
+                            <a href="emergency.html" class="module-link orange">Setup Alerts →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Logout functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add interactivity for sidebar icons
+            const sidebarIcons = document.querySelectorAll('.sidebar-icon');
+            sidebarIcons.forEach(icon => {
+                icon.addEventListener('click', function() {
+                    sidebarIcons.forEach(i => i.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Add click handlers for module cards
+            const moduleCards = document.querySelectorAll('.module-card');
+            moduleCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    console.log('Module clicked');
+                });
+            });
+
+            // Search functionality
+            const searchInput = document.querySelector('.search-box');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        console.log('Search for:', this.value);
+                    }
+                });
+            }
+        });
+            </script>
+            <script>
+                // Greeting
+function getGreeting() {
+    let hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    else if (hour < 18) return "Good Afternoon";
+    else return "Good Evening";
+}
+
+let username = localStorage.getItem("username") || "User";
+document.getElementById("greetingText").innerText =
+    getGreeting() + ", " + username;
+
+
+</script>
+    <script>
+// Open file explorer when image is clicked
+document.getElementById("profilePic").addEventListener("click", function () {
+    document.getElementById("fileInput").click();
+});
+
+// When user selects image
+document.getElementById("fileInput").addEventListener("change", function (event) {
+    const file = event.target.files[0];
+
+    if (file) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+            // Set image preview
+            document.getElementById("profilePic").src = e.target.result;
+
+            // Save image in localStorage
+            localStorage.setItem("profilePic", e.target.result);
+        };
+
+        reader.readAsDataURL(file);
+    }
+});
+
+// Load saved image on refresh
+window.onload = function () {
+    let savedImage = localStorage.getItem("profilePic");
+
+    if (savedImage) {
+        document.getElementById("profilePic").src = savedImage;
+    }
+};
+
+            </script>
+    <script>
+        function goHome() {
+            window.location.href = "dashboard.html";
+        }
+
+        function openSettings() {
+            window.location.href = "setting.html";
+        }
+
+        function openLogout() {
+             window.location.href = "logout.html";
+        }
+            function openFavourite() {
+                window.location.href = "favourite.html";
+            }
+    
+        function openLearning() {
+            window.location.href = "learning.html";
+        }
+        function startSignToText() {
+            alert("To use the Sign to Text module, please run the development server first. Open a terminal and run: cd signtotext/frontend && npm run dev");
+        }
+        function updateStreakOnVisit() {
+
+  let data = JSON.parse(localStorage.getItem("progress")) || {
+    streak: 0,
+    lastVisit: null
+  };
+
+  let today = new Date().toDateString();
+
+  // First time visit
+  if (!data.lastVisit) {
+    data.streak = 1;
+  } else {
+    let last = new Date(data.lastVisit);
+    let diff = Math.floor((new Date(today) - last) / (1000 * 60 * 60 * 24));
+
+    if (diff === 1) {
+      data.streak += 1;   // continue streak
+    } 
+    else if (diff > 1) {
+      data.streak = 1;    // reset streak
+    }
+    // if diff === 0 → same day → do nothing
+  }
+
+  data.lastVisit = today;
+
+  localStorage.setItem("progress", JSON.stringify(data));
+}
+function loadDashboard() {
+
+  let data = JSON.parse(localStorage.getItem("progress")) || {};
+
+  document.getElementById("dayStreak").innerText = data.streak || 0;
+
+}
+updateStreakOnVisit();   // 1️⃣ Update streak when user opens dashboard
+loadDashboard();         // 2️⃣ Show updated data
+
+    </script>
+ 
+    <script src="script.js"></script>
+
+<!-- ✅ NEW: Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

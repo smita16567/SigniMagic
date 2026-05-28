@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Words Learning - ISL</title>
+<!-- ✅ NEW: PWA Support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;500;600;700;800&family=Comic+Neue:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Baloo 2','Segoe UI',sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;text-align:center}
+.header{background:#1a1a2e;color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,0.3)}
+.header h2{font-size:20px;font-weight:700}
+.header button{padding:8px 14px;border:none;border-radius:8px;cursor:pointer;font-family:'Baloo 2',sans-serif;font-weight:600;font-size:14px;color:#fff}
+.back-btn{background:#374151}
+.back-btn.active{background:#f97316}
+.settings-btn{background:#374151}
+.categories{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:15px 10px 5px}
+.cat-btn{padding:6px 16px;border:none;border-radius:20px;cursor:pointer;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13px;background:rgba(255,255,255,0.9);box-shadow:0 2px 8px rgba(0,0,0,0.12);transition:all 0.3s}
+.cat-btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:10px;padding:15px 20px;max-width:720px;margin:0 auto}
+.word-btn{padding:14px 8px;font-size:13px;font-weight:700;font-family:'Baloo 2',sans-serif;background:#fff;color:#333;border:2px solid transparent;border-radius:14px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,0.12);transition:all 0.3s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.word-btn:hover{transform:scale(1.08);color:#fff}
+.word-btn .emoji{font-size:24px}
+.word-btn .label{line-height:1.2;font-size:12px}
+.card{width:380px;max-width:92%;background:#fff;margin:20px auto;padding:0;border-radius:24px;box-shadow:0 12px 40px rgba(0,0,0,0.25);display:none;position:relative;overflow:hidden}
+.card.show{display:block}
+.card-top{padding:20px 20px 0;position:relative}
+.card .cat-tag{display:inline-block;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:700;font-family:'Baloo 2',sans-serif;margin-bottom:8px;border:2px solid}
+.card .num-badge{position:absolute;top:20px;right:20px;background:#f1f5f9;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;color:#64748b;font-family:'Baloo 2',sans-serif}
+.card .big-emoji{font-size:56px;margin:4px 0}
+.card .word-title{font-size:26px;margin:4px 0;color:#1e293b;font-family:'Baloo 2',sans-serif}
+.card .hindi{font-size:15px;color:#64748b;margin:0 0 10px;font-family:'Comic Neue',sans-serif}
+.video-section{margin:0 20px 12px;border-radius:16px;overflow:hidden;background:#f8fafc;border:2px solid #e2e8f0}
+.video-section video{width:100%;display:block;border-radius:14px}
+.video-fallback{padding:20px;text-align:center}
+.video-fallback .hand-icon{font-size:48px;margin-bottom:8px;animation:wave 1.5s ease-in-out infinite}
+@keyframes wave{0%,100%{transform:rotate(0deg)}25%{transform:rotate(15deg)}75%{transform:rotate(-15deg)}}
+.video-fallback p{font-size:12px;color:#94a3b8;font-family:'Baloo 2',sans-serif}
+.sign-section{margin:0 20px 16px}
+.sign-title{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.sign-title .icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.sign-title strong{font-size:14px;font-family:'Baloo 2',sans-serif}
+.sign-steps{list-style:none;text-align:left}
+.sign-steps li{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;font-size:13px;color:#334155;line-height:1.5;font-family:'Comic Neue',sans-serif}
+.step-num{min-width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;font-family:'Baloo 2',sans-serif;flex-shrink:0;margin-top:1px}
+.tip-box{margin:0 20px 16px;background:#fffbeb;border:2px solid #fde68a;border-radius:12px;padding:10px 14px;text-align:left;display:flex;align-items:flex-start;gap:8px}
+.tip-box .tip-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.tip-box p{font-size:12px;color:#92400e;line-height:1.4;font-family:'Comic Neue',sans-serif}
+.tip-box strong{font-family:'Baloo 2',sans-serif}
+.card-bottom{padding:12px 20px 20px;border-top:1px solid #f1f5f9}
+.controls{display:flex;justify-content:space-between;align-items:center}
+.controls button{padding:10px 22px;border:none;border-radius:12px;cursor:pointer;font-size:18px;font-weight:700;transition:all 0.2s}
+.controls button:hover{transform:scale(1.1)}
+.controls .nav-btn{background:#f1f5f9}
+.controls .speak-btn{color:#fff;font-size:20px;padding:10px 26px;border-radius:14px}
+.progress{font-size:11px;color:#94a3b8;margin-top:8px;font-family:'Baloo 2',sans-serif}
+.footer{padding:20px;color:rgba(255,255,255,0.7);font-size:12px;font-family:'Baloo 2',sans-serif}
+.footer p{margin:0}
+.footer .note{margin-top:4px;font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="back-btn" id="backBtn" onclick="goBack()">&#x1F3E0; Learning</button>
+  <h2>&#x1F91F; ISL Words</h2>
+  <button class="settings-btn" onclick="openSettings()">&#x2699;&#xFE0F;</button>
+</div>
+<div class="categories" id="categories"></div>
+<div class="grid" id="wordGrid"></div>
+
+<div class="card" id="card">
+  <div class="card-top">
+    <span class="cat-tag" id="catTag"></span>
+    <div class="num-badge" id="numBadge"></div>
+    <div class="big-emoji" id="bigEmoji"></div>
+    <h2 class="word-title" id="wordTitle"></h2>
+    <p class="hindi" id="hindiText"></p>
+  </div>
+  <div class="video-section" id="videoSection">
+    <video id="signVideo" controls playsinline style="display:none"></video>
+    <div class="video-fallback" id="videoFallback">
+      <div class="hand-icon">&#x1F91A;</div>
+      <p>Add video: <strong>Videos/<span id="vidFileName"></span>.mp4</strong></p>
+    </div>
+  </div>
+  <div class="sign-section">
+    <div class="sign-title">
+      <div class="icon" id="signIcon">&#x270B;</div>
+      <strong>How to Sign</strong>
+    </div>
+    <ol class="sign-steps" id="signSteps"></ol>
+  </div>
+  <div class="tip-box" id="tipBox">
+    <span class="tip-icon">&#x1F4A1;</span>
+    <p><strong>Tip:</strong> <span id="tipText"></span></p>
+  </div>
+  <div class="card-bottom">
+    <div class="controls">
+      <button class="nav-btn" onclick="prevWord()">&#x2B05;</button>
+      <button class="speak-btn" id="speakBtn" onclick="speakWord()">&#x1F50A;</button>
+      <button class="nav-btn" onclick="nextWord()">&#x27A1;</button>
+    </div>
+    <p class="progress" id="progress"></p>
+  </div>
+</div>
+
+
+<script>
+var categories = [
+  {name:"All",color:"#1a1a2e",emoji:""},
+  {name:"Greetings",color:"#8B5CF6",emoji:"\u{1F64F}"},
+  {name:"Family",color:"#EC4899",emoji:"\u{1F46A}"},
+  {name:"Food & Drink",color:"#F97316",emoji:"\u{1F34E}"},
+  {name:"Actions",color:"#2563EB",emoji:"\u{1F3C3}"},
+  {name:"Emotions",color:"#EF4444",emoji:"\u{1F60A}"},
+  {name:"Common Words",color:"#10B981",emoji:"\u{1F4AC}"},
+  {name:"Questions",color:"#6366F1",emoji:"\u2753"}
+];
+
+var allWords = [
+  {id:1,word:"Hello / Namaste",hindi:"\u0928\u092E\u0938\u094D\u0924\u0947",category:"Greetings",steps:["Join both palms together in front of your chest","Keep fingers pointing upward like traditional Namaste","Slightly bow your head forward"],tip:"This is the universal Indian greeting — works for hello, goodbye, and showing respect!",emoji:"\u{1F64F}"},
+  {id:2,word:"Thank You",hindi:"\u0927\u0928\u094D\u092F\u0935\u093E\u0926",category:"Greetings",steps:["Touch your chin or lips with fingertips of your flat right hand","Move your hand forward and slightly downward","Keep a grateful facial expression"],tip:"The forward motion represents sending your thanks to the other person.",emoji:"\u{1F64F}"},
+  {id:3,word:"Sorry",hindi:"\u092E\u093E\u092B\u093C \u0915\u0930\u0928\u093E",category:"Greetings",steps:["Make a fist with your right hand","Place it on your chest over the heart area","Rub it in a circular motion"],tip:"The circular motion over the heart shows sincerity in your apology.",emoji:"\u{1F625}"},
+  {id:4,word:"Please",hindi:"\u0915\u0943\u092A\u092F\u093E",category:"Greetings",steps:["Place your flat right hand on your chest","Move it in a small circular motion","Maintain a polite facial expression"],tip:"Similar to Sorry but with a requesting expression on your face.",emoji:"\u{1F932}"},
+  {id:5,word:"Good Morning",hindi:"\u0938\u0941\u092A\u094D\u0930\u092D\u093E\u0924",category:"Greetings",steps:["First sign 'good' — give a thumbs up","Then place your flat left hand horizontally (like the horizon)","Raise your right hand upward above it like the rising sun"],tip:"This is a compound sign — two signs combined: 'good' + 'morning'.",emoji:"\u{1F305}"},
+  {id:6,word:"Goodbye",hindi:"\u0905\u0932\u0935\u093F\u0926\u093E",category:"Greetings",steps:["Raise your right hand up with open palm facing outward","Wave it side to side gently","Smile while waving"],tip:"Keep the wave gentle and natural, just like a regular goodbye wave.",emoji:"\u{1F44B}"},
+  {id:7,word:"Welcome",hindi:"\u0938\u094D\u0935\u093E\u0917\u0924",category:"Greetings",steps:["Extend both hands forward with open palms facing up","Bring them toward your body in a welcoming motion","Use a warm, inviting facial expression"],tip:"The inward motion represents inviting someone into your space.",emoji:"\u{1F917}"},
+  {id:8,word:"Mother",hindi:"\u092E\u093E\u0901",category:"Family",steps:["Open your right hand with fingers slightly spread","Touch your right cheek with your right thumb","Hold briefly then release"],tip:"The cheek represents the softness and warmth of a mother.",emoji:"\u{1F469}"},
+  {id:9,word:"Father",hindi:"\u092A\u093F\u0924\u093E",category:"Family",steps:["Open your right hand with fingers slightly spread","Touch your forehead with your right thumb","Hold briefly then release"],tip:"The forehead represents wisdom and authority of a father.",emoji:"\u{1F468}"},
+  {id:10,word:"Brother",hindi:"\u092D\u093E\u0908",category:"Family",steps:["Make fists with both hands","Place them together at the knuckles at nose level","Move them apart sideways"],tip:"The two fists represent two people of equal standing (siblings).",emoji:"\u{1F466}"},
+  {id:11,word:"Sister",hindi:"\u092C\u0939\u0928",category:"Family",steps:["Touch the side of your nose with your right index finger","Move it downward gently along the cheek","End at chin level"],tip:"The gentle downward motion along the cheek distinguishes sister from brother.",emoji:"\u{1F467}"},
+  {id:12,word:"Baby",hindi:"\u092C\u091A\u094D\u091A\u093E",category:"Family",steps:["Cradle both arms together in front of your body","Rock them gently side to side","As if holding and rocking a baby"],tip:"This is one of the most universal signs — the rocking motion is recognized worldwide!",emoji:"\u{1F476}"},
+  {id:13,word:"Friend",hindi:"\u0926\u094B\u0938\u094D\u0924",category:"Family",steps:["Extend index fingers on both hands","Hook them together like a chain link","Pull apart gently and hook them again"],tip:"The interlocking fingers represent the bond between friends.",emoji:"\u{1F91D}"},
+  {id:14,word:"Family",hindi:"\u092A\u0930\u093F\u0935\u093E\u0930",category:"Family",steps:["Form the letter 'F' with both hands (fingerspelling)","Start with hands together in front","Make a circle moving outward to show a family unit"],tip:"The circular motion represents the family circle — everyone connected.",emoji:"\u{1F46A}"},
+  {id:15,word:"Water",hindi:"\u092A\u093E\u0928\u0940",category:"Food & Drink",steps:["Extend three fingers (index, middle, ring) on your right hand","Bring them to your chin","Tap your chin twice"],tip:"The three fingers tapping the chin mimic the motion of drinking water.",emoji:"\u{1F4A7}"},
+  {id:16,word:"Food",hindi:"\u0916\u093E\u0928\u093E",category:"Food & Drink",steps:["Bring your right hand fingers together at the tips","Move them toward your mouth repeatedly","As if putting food in your mouth"],tip:"Use a natural eating motion — everyone will understand this instinctively!",emoji:"\u{1F35A}"},
+  {id:17,word:"Milk",hindi:"\u0926\u0942\u0927",category:"Food & Drink",steps:["Make a fist with your right hand","Squeeze it open and closed repeatedly","Like milking a cow"],tip:"The squeezing motion directly represents the action of milking.",emoji:"\u{1F95B}"},
+  {id:18,word:"Tea",hindi:"\u091A\u093E\u092F",category:"Food & Drink",steps:["Make a 'C' shape with your right hand","Hold it like a small cup","Bring it to your lips as if sipping"],tip:"The 'C' hand shape perfectly mimics holding a tea cup.",emoji:"\u2615"},
+  {id:19,word:"Rice",hindi:"\u091A\u093E\u0935\u0932",category:"Food & Drink",steps:["Cup your left hand palm facing up","Use right fingers to pick from the left palm","Bring to your mouth (eating rice gesture)"],tip:"This mimics the traditional Indian way of eating rice with fingers.",emoji:"\u{1F35A}"},
+  {id:20,word:"Fruit",hindi:"\u092B\u0932",category:"Food & Drink",steps:["Touch the side of your cheek with right thumb and index finger forming a circle","Twist your wrist slightly","Like picking a fruit from a tree"],tip:"The twisting motion represents plucking a fruit.",emoji:"\u{1F34E}"},
+  {id:21,word:"Bread",hindi:"\u0930\u094B\u091F\u0940",category:"Food & Drink",steps:["Place one hand flat with palm facing up","Use the other hand to make a slicing motion across it","Like cutting bread or roti"],tip:"For 'Roti' specifically, you can add a patting motion like making chapati.",emoji:"\u{1F35E}"},
+  {id:22,word:"Come",hindi:"\u0906\u0928\u093E",category:"Actions",steps:["Extend your right hand forward, palm facing up","Curl your fingers toward yourself","Repeat the beckoning motion 2-3 times"],tip:"The inward curling motion naturally means 'come here'.",emoji:"\u{1F449}"},
+  {id:23,word:"Go",hindi:"\u091C\u093E\u0928\u093E",category:"Actions",steps:["Point your right index finger forward","Move your whole hand away from your body","Use a pushing motion outward"],tip:"The direction you point indicates where to go.",emoji:"\u{1F6B6}"},
+  {id:24,word:"Eat",hindi:"\u0916\u093E\u0928\u093E",category:"Actions",steps:["Gather your right hand fingers at the tips","Bring them to your mouth","Tap near your mouth twice"],tip:"Very similar to 'Food' — the context makes the difference (noun vs verb).",emoji:"\u{1F37D}"},
+  {id:25,word:"Drink",hindi:"\u092A\u0940\u0928\u093E",category:"Actions",steps:["Make a 'C' shape with your right hand","Hold it as if holding a glass","Tilt it toward your mouth"],tip:"The tilting motion is key — it shows the action of drinking.",emoji:"\u{1F943}"},
+  {id:26,word:"Sleep",hindi:"\u0938\u094B\u0928\u093E",category:"Actions",steps:["Tilt your head to one side","Place both palms together near your cheek","Close your eyes gently"],tip:"This is another universal sign that everyone recognizes!",emoji:"\u{1F634}"},
+  {id:27,word:"Help",hindi:"\u092E\u0926\u0926",category:"Actions",steps:["Place your right fist with thumb up on your flat left palm","Lift both hands upward together","The rising motion shows support"],tip:"The thumb up on the palm represents someone being lifted up or supported.",emoji:"\u{1F91D}"},
+  {id:28,word:"Read",hindi:"\u092A\u0922\u093C\u0928\u093E",category:"Actions",steps:["Hold your left hand flat like an open book","Extend right index and middle fingers","Move them across the left palm from left to right"],tip:"The two fingers represent eyes scanning across a page.",emoji:"\u{1F4D6}"},
+  {id:29,word:"Write",hindi:"\u0932\u093F\u0916\u0928\u093E",category:"Actions",steps:["Hold your left hand flat like a piece of paper","Pinch your right thumb and index finger together (like holding a pen)","Move your right hand across the left palm in a writing motion"],tip:"The pinching motion mimics holding a pen or pencil.",emoji:"\u270D"},
+  {id:30,word:"Happy",hindi:"\u0916\u0941\u0936",category:"Emotions",steps:["Place both flat hands on your chest","Brush them upward and outward repeatedly","Show a big smile on your face"],tip:"Facial expression is crucial — always smile when signing 'Happy'!",emoji:"\u{1F604}"},
+  {id:31,word:"Sad",hindi:"\u0926\u0941\u0916\u0940",category:"Emotions",steps:["Place both open hands in front of your face","Move them slowly downward","Make a sad facial expression"],tip:"The downward motion represents falling tears or sinking feelings.",emoji:"\u{1F622}"},
+  {id:32,word:"Angry",hindi:"\u0917\u0941\u0938\u094D\u0938\u093E",category:"Emotions",steps:["Place your right hand in a claw shape in front of your face","Pull it downward with tension","Show an angry/tense expression"],tip:"The claw shape and tense face together convey the intensity of anger.",emoji:"\u{1F620}"},
+  {id:33,word:"Love",hindi:"\u092A\u094D\u092F\u093E\u0930",category:"Emotions",steps:["Cross both arms over your chest","Close both fists","Hold the position like hugging yourself"],tip:"The self-hug represents wrapping someone in love.",emoji:"\u2764"},
+  {id:34,word:"Scared",hindi:"\u0921\u0930\u093E \u0939\u0941\u0906",category:"Emotions",steps:["Place both open hands in front of your body, palms facing you","Shake them while pulling back slightly","Show a fearful expression with wide eyes"],tip:"The shaking hands and wide eyes together show fear convincingly.",emoji:"\u{1F628}"},
+  {id:35,word:"Surprised",hindi:"\u0939\u0948\u0930\u093E\u0928",category:"Emotions",steps:["Place both hands near your cheeks","Spread your fingers wide open","Widen your eyes and open your mouth"],tip:"Think of the classic surprised face — the hands frame that expression!",emoji:"\u{1F632}"},
+  {id:36,word:"Yes",hindi:"\u0939\u093E\u0901",category:"Common Words",steps:["Make a fist with your right hand","Nod it forward repeatedly","Like your fist is nodding 'yes'"],tip:"The fist nod is like a mini head-nod — quick and clear.",emoji:"\u2705"},
+  {id:37,word:"No",hindi:"\u0928\u0939\u0940\u0902",category:"Common Words",steps:["Extend your index and middle fingers together","Tap them against your thumb","Or wave your index finger side to side"],tip:"The side-to-side wave is the more casual version used in daily conversation.",emoji:"\u274C"},
+  {id:38,word:"Home",hindi:"\u0918\u0930",category:"Common Words",steps:["Bring fingertips of both hands together above your head","Form a triangle/roof shape","Hold briefly to represent a house"],tip:"The triangle represents the roof of a house — simple and clear!",emoji:"\u{1F3E0}"},
+  {id:39,word:"School",hindi:"\u0938\u094D\u0915\u0942\u0932",category:"Common Words",steps:["Clap your hands together twice","Like a teacher clapping for attention","Then point forward"],tip:"The clapping mimics a teacher getting students' attention in class.",emoji:"\u{1F3EB}"},
+  {id:40,word:"Book",hindi:"\u0915\u093F\u0924\u093E\u092C",category:"Common Words",steps:["Place both palms together flat","Open them outward like opening a book","Keep fingers together"],tip:"One of the most intuitive signs — everyone opens books this way!",emoji:"\u{1F4D5}"},
+  {id:41,word:"Phone",hindi:"\u092B\u093C\u094B\u0928",category:"Common Words",steps:["Extend your thumb and pinky finger (Y handshape)","Fold the middle three fingers down","Hold it near your ear like a phone"],tip:"This mimics the classic phone gesture everyone knows.",emoji:"\u{1F4F1}"},
+  {id:42,word:"Money",hindi:"\u092A\u0948\u0938\u0947",category:"Common Words",steps:["Hold your left hand flat, palm facing up","Tap the back of your right flat hand on it","Repeat 2-3 times"],tip:"The tapping motion represents counting or handling money.",emoji:"\u{1F4B0}"},
+  {id:43,word:"Time",hindi:"\u0938\u092E\u092F",category:"Common Words",steps:["Point your right index finger","Tap it on your left wrist","Where a watch would be worn"],tip:"This is universal — pointing at the wrist for time works in most cultures!",emoji:"\u23F0"},
+  {id:44,word:"What",hindi:"\u0915\u094D\u092F\u093E",category:"Questions",steps:["Hold both hands out with palms facing up","Shake them slightly side to side","Show a questioning expression with raised eyebrows"],tip:"Always raise your eyebrows for question words — it's part of ISL grammar!",emoji:"\u2753"},
+  {id:45,word:"Where",hindi:"\u0915\u0939\u093E\u0901",category:"Questions",steps:["Point your right index finger outward","Wave it side to side","Raise your eyebrows questioningly"],tip:"The waving point means 'which direction?' — naturally understood.",emoji:"\u{1F4CD}"},
+  {id:46,word:"How",hindi:"\u0915\u0948\u0938\u0947",category:"Questions",steps:["Place both hands in front with palms facing up","Flip them over so palms face down","Show a questioning face"],tip:"The flip represents 'in what way?' — the manner of doing something.",emoji:"\u{1F914}"},
+  {id:47,word:"Why",hindi:"\u0915\u094D\u092F\u094B\u0902",category:"Questions",steps:["Touch your forehead with your right index finger","Move it forward away from your head","Make an inquisitive expression"],tip:"Touching the forehead represents thinking — 'what is the reason?'",emoji:"\u{1F9D0}"},
+  {id:48,word:"Who",hindi:"\u0915\u094C\u0928",category:"Questions",steps:["Point your right index finger forward","Draw a small circle in the air","Furrow your eyebrows questioningly"],tip:"The circle represents looking around to identify a person.",emoji:"\u{1F464}"},
+  {id:49,word:"When",hindi:"\u0915\u092C",category:"Questions",steps:["Point your right index finger to your left wrist","Then circle the finger in the air above it","Show a questioning expression"],tip:"Pointing at the wrist (time) + circling (searching) = When?",emoji:"\u{1F4C5}"},
+  {id:50,word:"Which",hindi:"\u0915\u094C\u0928 \u0938\u093E",category:"Questions",steps:["Hold both hands up with index fingers pointing upward","Alternate moving them up and down","Make a questioning look — choosing between options"],tip:"The alternating fingers represent weighing two choices.",emoji:"\u{1F500}"}
+];
+
+var currentWords=[...allWords],currentIndex=0,activeCategory="All";
+function init(){renderCategories();renderGrid()}
+function renderCategories(){
+  var c=document.getElementById("categories");c.innerHTML="";
+  categories.forEach(function(cat){
+    var b=document.createElement("button");
+    b.className="cat-btn"+(activeCategory===cat.name?" active":"");
+    var count=cat.name==="All"?allWords.length:allWords.filter(function(w){return w.category===cat.name}).length;
+    b.innerHTML=(cat.emoji?cat.emoji+" ":"")+cat.name+" ("+count+")";
+    b.style.color=activeCategory===cat.name?"white":cat.color;
+    b.style.background=activeCategory===cat.name?cat.color:"rgba(255,255,255,0.9)";
+    b.onclick=function(){
+      activeCategory=cat.name;
+      currentWords=cat.name==="All"?[...allWords]:allWords.filter(function(w){return w.category===cat.name});
+      currentIndex=0;
+      document.getElementById("card").classList.remove("show");
+      document.getElementById("backBtn").className="back-btn";
+      document.getElementById("backBtn").innerHTML="&#x1F3E0; Learning";
+      renderCategories();renderGrid();
+    };
+    c.appendChild(b);
+  });
+}
+function renderGrid(){
+  var g=document.getElementById("wordGrid");g.innerHTML="";
+  currentWords.forEach(function(word,i){
+    var b=document.createElement("button");b.className="word-btn";
+    var color=getCatColor(word.category);
+    b.style.borderColor=color+"30";
+    b.innerHTML='<span class="emoji">'+word.emoji+'</span><span class="label">'+word.word.split("/")[0].trim()+'</span>';
+    b.onmouseenter=function(){b.style.background=color;b.style.color="white"};
+    b.onmouseleave=function(){b.style.background="white";b.style.color="#333"};
+    b.onclick=function(){showWord(i)};
+    g.appendChild(b);
+  });
+}
+function showWord(i){
+  currentIndex=i;var word=currentWords[i];var color=getCatColor(word.category);
+  document.getElementById("card").classList.add("show");
+  document.getElementById("backBtn").className="back-btn active";
+  document.getElementById("backBtn").innerHTML="&#x2B05; Back";
+  var ct=document.getElementById("catTag");
+  ct.innerText=word.category;ct.style.background=color+"20";ct.style.color=color;ct.style.borderColor=color+"40";
+  document.getElementById("numBadge").innerText="#"+word.id;
+  document.getElementById("bigEmoji").innerText=word.emoji;
+  document.getElementById("wordTitle").innerText=word.word;
+  document.getElementById("hindiText").innerText=word.hindi;
+  var video=document.getElementById("signVideo");
+  var fallback=document.getElementById("videoFallback");
+  var videoPath="Videos/"+word.id+".mp4";
+  video.src=videoPath;video.style.display="block";fallback.style.display="none";
+  video.onerror=function(){video.style.display="none";fallback.style.display="block"};
+  document.getElementById("vidFileName").innerText=word.id;
+  var stepsEl=document.getElementById("signSteps");stepsEl.innerHTML="";
+  word.steps.forEach(function(step,idx){
+    var li=document.createElement("li");
+    li.innerHTML='<span class="step-num" style="background:'+color+'">'+(idx+1)+'</span><span>'+step+'</span>';
+    stepsEl.appendChild(li);
+  });
+  document.getElementById("signIcon").style.background=color+"20";
+  document.getElementById("signIcon").style.color=color;
+  document.getElementById("tipText").innerText=word.tip;
+  document.getElementById("speakBtn").style.background=color;
+  document.getElementById("progress").innerText=(i+1)+" of "+currentWords.length+" words";
+  speakText(word.word.split("/")[0].trim());
+}
+function nextWord(){currentIndex=(currentIndex+1)%currentWords.length;showWord(currentIndex)}
+function prevWord(){currentIndex=(currentIndex-1+currentWords.length)%currentWords.length;showWord(currentIndex)}
+function speakText(t){if("speechSynthesis"in window){var s=new SpeechSynthesisUtterance(t);s.rate=0.9;speechSynthesis.speak(s)}}
+function speakWord(){speakText(currentWords[currentIndex].word.split("/")[0].trim())}
+function goBack(){
+  if(document.getElementById("card").classList.contains("show")){
+    document.getElementById("card").classList.remove("show");
+    document.getElementById("backBtn").className="back-btn";
+    document.getElementById("backBtn").innerHTML="&#x1F3E0; Learning";
+  }else{window.location.href="learning.html"}
+}
+function openSettings(){window.location.href="setting.html"}
+function getCatColor(c){var cat=categories.find(function(x){return x.name===c});return cat?cat.color:"#64748B"}
+init();
+</script>
+<!-- ✅ NEW: Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

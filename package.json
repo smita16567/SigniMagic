@@ -1,0 +1,15 @@
+{
+  "name": "signimagic",
+  "version": "1.0.0",
+  "workspaces": [
+    "SIGNIMAGIC/Module"
+  ],
+  "scripts": {
+    "dev": "npm run --workspace=SIGNIMAGIC/Module dev",
+    "build": "npm run --workspace=SIGNIMAGIC/Module build"
+  },
+  "dependencies": {
+    "@mediapipe/camera_utils": "^0.3.1675466862",
+    "@mediapipe/hands": "^0.4.1675469240"
+  }
+}

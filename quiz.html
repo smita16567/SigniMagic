@@ -1,0 +1,488 @@
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISL Quiz - Learning</title>
+ <!-- ✅ NEW: PWA Support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f4; min-height: 100vh; }
+
+    .header { background: #4CAF50; color: #fff; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .header .back-btn { background: #fff; color: #333; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+    .header h1 { font-size: 22px; display: flex; align-items: center; gap: 8px; }
+    .header .placeholder { width: 90px; }
+
+    .container { max-width: 750px; margin: 24px auto; padding: 0 16px; }
+
+    /* Level Selector */
+    .level-selector { background: #fff; border-radius: 14px; padding: 28px; box-shadow: 0 2px 10px rgba(0,0,0,.07); margin-bottom: 24px; }
+    .level-selector h2 { margin-bottom: 6px; font-size: 20px; }
+    .level-selector p { color: #777; margin-bottom: 18px; font-size: 14px; }
+    .level-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+    .level-btn { padding: 14px 22px; border-radius: 10px; border: 2px solid #e0e0e0; background: #fff; cursor: pointer; font-size: 15px; font-weight: 600; transition: all .25s; display: flex; align-items: center; gap: 8px; }
+    .level-btn:hover { border-color: #4CAF50; background: #e8f5e9; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(76,175,80,.15); }
+    .level-btn .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+    .dot-green { background: #4CAF50; } .dot-yellow { background: #FFC107; } .dot-orange { background: #FF9800; } .dot-red { background: #f44336; }
+
+    /* Quiz Card */
+    .quiz-card { background: #fff; border-radius: 14px; padding: 28px; box-shadow: 0 2px 10px rgba(0,0,0,.07); display: none; }
+    .quiz-card.active { display: block; }
+
+    .progress-bar-wrap { height: 8px; background: #e8e8e8; border-radius: 4px; margin-bottom: 18px; overflow: hidden; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #4CAF50, #81C784); border-radius: 4px; transition: width .4s; }
+
+    .q-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 13px; color: #999; }
+    .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .5px; }
+    .b-alpha { background: #4CAF50; } .b-num { background: #2196F3; } .b-word { background: #FF9800; } .b-sent { background: #9C27B0; }
+    .timer { font-weight: 600; color: #555; }
+
+    /* Sign Display */
+    .sign-display { background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%); border: 2px solid #c8e6c9; border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 22px; position: relative; }
+    .sign-display .sign-label { font-size: 13px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .sign-display .sign-desc { font-size: 15px; color: #444; line-height: 1.5; font-weight: 500; margin-top: 8px; }
+    .sign-display.reverse { background: linear-gradient(135deg, #e3f2fd 0%, #e8eaf6 100%); border-color: #bbdefb; }
+    .q-direction { position: absolute; top: 10px; right: 14px; font-size: 11px; background: rgba(0,0,0,.06); padding: 2px 8px; border-radius: 10px; color: #666; }
+
+    /* Sign Image */
+    .sign-img { width: 160px; height: 160px; border-radius: 12px; object-fit: contain; background: #fff; border: 2px solid #c8e6c9; padding: 8px; margin: 0 auto 8px; display: block; }
+    .sign-display.reverse .sign-img { border-color: #90caf9; }
+    .sign-emoji { font-size: 64px; margin-bottom: 8px; display: block; }
+
+    /* Option images — image only, no text */
+    .opt-img { width: 90px; height: 90px; border-radius: 10px; object-fit: contain; background: #fff; border: 2px solid #e0e0e0; padding: 6px; flex-shrink: 0; transition: border-color .2s; }
+
+    .question-text { font-size: 19px; font-weight: 600; margin-bottom: 18px; line-height: 1.4; }
+
+    .options { display: flex; flex-direction: column; gap: 10px; }
+    .options.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .option-btn { padding: 12px 14px; border: 2px solid #e0e0e0; border-radius: 10px; background: #fff; cursor: pointer; font-size: 15px; text-align: left; transition: all .2s; display: flex; align-items: center; gap: 10px; }
+    .option-btn:hover { border-color: #4CAF50; background: #f1f8e9; }
+    .option-btn.correct { border-color: #4CAF50; background: #e8f5e9; }
+    .option-btn.wrong { border-color: #f44336; background: #ffebee; }
+    .option-btn.disabled { pointer-events: none; opacity: .85; }
+    .option-letter { min-width: 30px; height: 30px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+    .option-btn.correct .option-letter { background: #4CAF50; color: #fff; }
+    .option-btn.wrong .option-letter { background: #f44336; color: #fff; }
+
+    .feedback { margin-top: 14px; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 500; display: none; }
+    .feedback.show { display: block; }
+    .feedback.correct { background: #e8f5e9; color: #2e7d32; }
+    .feedback.wrong { background: #ffebee; color: #c62828; }
+    .feedback .fb-tip { display: block; margin-top: 6px; font-size: 13px; font-weight: 400; opacity: .85; }
+
+    .next-btn { margin-top: 18px; padding: 12px 32px; background: #4CAF50; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; display: none; transition: background .2s; }
+    .next-btn:hover { background: #388E3C; }
+    .next-btn.show { display: inline-block; }
+
+    /* Results */
+    .results-card { background: #fff; border-radius: 14px; padding: 36px; box-shadow: 0 2px 10px rgba(0,0,0,.07); text-align: center; display: none; }
+    .results-card.active { display: block; }
+    .results-icon { font-size: 64px; margin-bottom: 10px; }
+    .results-card h2 { font-size: 24px; margin-bottom: 6px; }
+    .results-card .score-text { font-size: 48px; font-weight: 700; color: #4CAF50; margin: 14px 0 4px; }
+    .results-card .score-label { font-size: 14px; color: #999; margin-bottom: 22px; }
+    .stats-row { display: flex; justify-content: center; gap: 36px; margin-bottom: 26px; }
+    .stat-item { text-align: center; }
+    .stat-value { font-size: 26px; font-weight: 700; }
+    .stat-label { font-size: 12px; color: #999; }
+    .stat-correct .stat-value { color: #4CAF50; }
+    .stat-wrong .stat-value { color: #f44336; }
+    .results-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .results-btns button { padding: 12px 26px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all .2s; }
+    .btn-retry { background: #4CAF50; color: #fff; } .btn-retry:hover { background: #388E3C; }
+    .btn-back { background: #e0e0e0; color: #333; } .btn-back:hover { background: #ccc; }
+
+    @media (max-width: 500px) {
+      .options.grid-2 { grid-template-columns: 1fr; }
+      .sign-img { width: 120px; height: 120px; }
+      .opt-img { width: 70px; height: 70px; }
+    }
+  </style>
+</head>
+<body class="antialiased text-gray-800">
+
+<div class="header">
+  <button class="back-btn" id="headerBackBtn" onclick="goBack()">← Learning</button>
+  <h1 class="tracking-tight">🤟 ISL Quiz</h1>
+  <div class="placeholder"></div>
+</div>
+
+<div class="container">
+
+  <div class="level-selector" id="levelSelector">
+    <h2 class="tracking-tight font-semibold">🤟 Indian Sign Language Quiz</h2>
+    <p>Test your knowledge of ISL — Alphabets, Numbers, Words &amp; Sentences</p>
+    <div class="level-buttons">
+      <button class="level-btn" onclick="startQuiz('alphabets')"><span class="dot dot-green"></span> Alphabets (A–Z)</button>
+      <button class="level-btn" onclick="startQuiz('numbers')"><span class="dot dot-yellow"></span> Numbers (1–20)</button>
+      <button class="level-btn" onclick="startQuiz('words')"><span class="dot dot-orange"></span> Common Words</button>
+      <button class="level-btn" onclick="startQuiz('sentences')"><span class="dot dot-red"></span> Sentences</button>
+      <button class="level-btn" onclick="startQuiz('all')">🌟 All Topics</button>
+    </div>
+  </div>
+
+  <div class="quiz-card" id="quizCard">
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+    <div class="q-meta">
+      <span id="qCounter">Question 1 / 10</span>
+      <span class="badge b-alpha" id="topicBadge">Alphabets</span>
+      <span class="timer">⏱ <span id="timerVal">00:00</span></span>
+    </div>
+    <div id="signDisplay" class="sign-display" style="display:none"></div>
+    <div class="question-text" id="qText"></div>
+    <div class="options" id="optsContainer"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next →</button>
+  </div>
+
+  <div class="results-card" id="resultsCard">
+    <div class="results-icon" id="rIcon">🏆</div>
+    <h2 id="rTitle" class="tracking-tight font-semibold">Excellent!</h2>
+    <div class="score-text" id="rScore">0%</div>
+    <div class="score-label">Your Score</div>
+    <div class="stats-row">
+      <div class="stat-item stat-correct"><div class="stat-value" id="rCorrect">0</div><div class="stat-label">Correct</div></div>
+      <div class="stat-item stat-wrong"><div class="stat-value" id="rWrong">0</div><div class="stat-label">Wrong</div></div>
+      <div class="stat-item"><div class="stat-value" id="rTime">00:00</div><div class="stat-label">Time</div></div>
+    </div>
+    <div class="results-btns">
+      <button class="btn-retry" onclick="retryQuiz()">🔄 Retry</button>
+      <button class="back-btn btn-back" id="mainBackBtn" onclick="goBack()">← Quiz</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const IMG = {
+  alpha: (letter) => `./Alphabets/${letter.toUpperCase()}.jpeg`,
+  num:   (n)      => `./Numbers/${n}.png`,
+};
+
+function wrongChoices(correct, allChoices, count = 3) {
+  const pool = allChoices.filter(c => String(c) !== String(correct));
+  const shuffled = shuffle([...pool]);
+  return shuffled.slice(0, count);
+}
+
+const ALL_LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const ALL_NUMBERS = Array.from({length: 20}, (_, i) => i + 1);
+
+const Q = {
+  alphabets: [
+    { type:"img-to-text", img:()=>IMG.alpha('A'), q:"Which letter does this ISL sign represent?", correct:"A", wrongFrom:ALL_LETTERS, topic:"Alphabets", tip:"This is the ISL sign for the letter 'A'." },
+    { type:"img-to-text", img:()=>IMG.alpha('B'), q:"Identify this ISL alphabet sign:", correct:"B", wrongFrom:ALL_LETTERS, topic:"Alphabets", tip:"This is the ISL sign for the letter 'B'." },
+    { type:"text-to-img", word:"A", q:"Which image shows the ISL sign for letter 'A'?", correct:"A", wrongFrom:ALL_LETTERS, topic:"Alphabets", tip:"Look for the ISL 'A' hand shape." },
+    { type:"text-to-img", word:"B", q:"Pick the correct ISL sign for 'B':", correct:"B", wrongFrom:ALL_LETTERS, topic:"Alphabets", tip:"The ISL 'B' has a distinct open palm shape." }
+  ],
+  numbers: [
+    { type:"img-to-text", img:()=>IMG.num(1),  q:"Which number does this ISL sign show?", correct:"1",  wrongFrom:ALL_NUMBERS, topic:"Numbers", tip:"This is the ISL sign for number 1." },
+    { type:"text-to-img-num", word:"1",  q:"Which image shows the ISL sign for number 1?",  correct:1,  wrongFrom:ALL_NUMBERS, topic:"Numbers", tip:"Look for a single raised finger." }
+  ],
+  words: [
+    { type:"sign-to-text", sign:"🙏", signDesc:"Both palms pressed together in front of chest, slight bow", q:"This ISL gesture commonly means:", opts:["Sorry","Thank You","Hello / Namaste","Please"], ans:2, topic:"Words", tip:"Palms together at chest = 'Namaste' / 'Hello' in ISL." },
+    { type:"text-to-sign", word:"Water 💧", q:"How do you sign 'Water' in ISL?", opts:["W-shape fingers tapping the chin","Cupping motion with both hands","Pouring gesture with one hand","Flat hand rubbing stomach"], ans:0, topic:"Words", tip:"W-handshape tapping chin = 'Water'." }
+  ],
+  sentences: [
+    { type:"text-to-sign", word:"How are you?", q:"How is 'How are you?' signed in ISL?", opts:["Point to person + palms up twist outward (How) + point","Wave hello three times","Touch chin then point","Clap then point"], ans:0, topic:"Sentences", tip:"Point → sign 'how' with twisting palms → point to person." },
+    { type:"sign-to-text", sign:"🧑‍🏫", signDesc:"Point to person → palms-up questioning shrug → point to a direction", q:"What sentence does this ISL sequence mean?", opts:["Where are you going?","What is your name?","Do you need help?","Are you a teacher?"], ans:0, topic:"Sentences", tip:"Point + question shrug + direction = 'Where are you going?'" }
+  ]
+};
+
+let curQs = [], curIdx = 0, score = 0, answered = false, timerInt = null, secs = 0, curLevel = '';
+const PER_QUIZ = 10;
+
+function startQuiz(level) {
+  curLevel = level; score = 0; curIdx = 0; secs = 0; answered = false;
+  let pool = level === 'all'
+    ? [...Q.alphabets, ...Q.numbers, ...Q.words, ...Q.sentences]
+    : [...Q[level]];
+  pool = shuffle(pool);
+  curQs = pool.slice(0, Math.min(PER_QUIZ, pool.length));
+  curQs.forEach(q => buildOptions(q));
+  
+  document.getElementById('levelSelector').style.display = 'none';
+  el('resultsCard').classList.remove('active');
+  el('quizCard').classList.add('active');
+  
+  // Update header button text to show return to Quiz menu
+  document.getElementById('headerBackBtn').innerText = '← Quiz';
+  
+  startTimer(); renderQ();
+}
+
+function buildOptions(q) {
+  if (q.type === 'img-to-text') {
+    const wrongs = wrongChoices(q.correct, q.wrongFrom.map(String), 3);
+    const opts = shuffle([q.correct, ...wrongs].map(String));
+    q._opts = opts;
+    q._ans = opts.indexOf(String(q.correct));
+  } else if (q.type === 'text-to-img') {
+    const wrongs = wrongChoices(q.correct, q.wrongFrom.map(String), 3);
+    const opts = shuffle([q.correct, ...wrongs].map(String));
+    q._opts = opts;
+    q._ans = opts.indexOf(q.correct);
+  } else if (q.type === 'text-to-img-num') {
+    const wrongs = wrongChoices(q.correct, q.wrongFrom, 3);
+    const opts = shuffle([q.correct, ...wrongs]);
+    q._opts = opts;
+    q._ans = opts.indexOf(q.correct);
+  }
+}
+
+function renderQ() {
+  answered = false;
+  const q = curQs[curIdx];
+  el('progressBar').style.width = ((curIdx) / curQs.length * 100) + '%';
+  el('qCounter').textContent = `Question ${curIdx + 1} / ${curQs.length}`;
+
+  const badge = el('topicBadge');
+  badge.textContent = q.topic;
+  badge.className = 'badge ' + ({Alphabets:'b-alpha',Numbers:'b-num',Words:'b-word',Sentences:'b-sent'}[q.topic]||'b-alpha');
+
+  const sd = el('signDisplay');
+  const oc = el('optsContainer');
+  oc.innerHTML = '';
+  const letters = ['A','B','C','D'];
+
+  if (q.type === 'img-to-text') {
+    sd.style.display = 'block';
+    sd.className = 'sign-display';
+    sd.innerHTML = `
+      <span class="q-direction">🔍 Identify the sign</span>
+      <img class="sign-img" src="${q.img()}" alt="ISL Sign" onerror="this.style.display='none'" />
+      <div class="sign-label">ISL Sign</div>`;
+    el('qText').textContent = q.q;
+    oc.className = 'options';
+    q._opts.forEach((o, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${o}</span>`;
+      btn.onclick = () => pickAnswer(i, q._ans);
+      oc.appendChild(btn);
+    });
+
+  } else if (q.type === 'text-to-img') {
+    sd.style.display = 'block';
+    sd.className = 'sign-display reverse';
+    sd.innerHTML = `
+      <span class="q-direction">🔤 Find the sign</span>
+      <div class="sign-label">Which sign is this letter?</div>
+      <div style="font-size:48px;font-weight:700;margin:8px 0">${q.word}</div>`;
+    el('qText').textContent = q.q;
+    oc.className = 'options grid-2';
+    q._opts.forEach((o, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = `<span class="option-letter">${letters[i]}</span>
+        <img class="opt-img" src="${IMG.alpha(o)}" alt="ISL Sign" onerror="this.alt='Image not found'" />`;
+      btn.onclick = () => pickAnswer(i, q._ans);
+      oc.appendChild(btn);
+    });
+
+  } else if (q.type === 'text-to-img-num') {
+    sd.style.display = 'block';
+    sd.className = 'sign-display reverse';
+    sd.innerHTML = `
+      <span class="q-direction">🔢 Find the sign</span>
+      <div class="sign-label">Which sign is this number?</div>
+      <div style="font-size:48px;font-weight:700;margin:8px 0">${q.word}</div>`;
+    el('qText').textContent = q.q;
+    oc.className = 'options grid-2';
+    q._opts.forEach((o, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = `<span class="option-letter">${letters[i]}</span>
+        <img class="opt-img" src="${IMG.num(o)}" alt="ISL Sign" onerror="this.alt='Image not found'" />`;
+      btn.onclick = () => pickAnswer(i, q._ans);
+      oc.appendChild(btn);
+    });
+
+  } else if (q.type === 'sign-to-text') {
+    sd.style.display = 'block';
+    sd.className = 'sign-display';
+    sd.innerHTML = `
+      <span class="q-direction">🔍 Identify the sign</span>
+      <span class="sign-emoji">${q.sign}</span>
+      <div class="sign-label">ISL Sign</div>
+      <div class="sign-desc">${q.signDesc}</div>`;
+    el('qText').textContent = q.q;
+    oc.className = 'options';
+    q.opts.forEach((o, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${o}</span>`;
+      btn.onclick = () => pickAnswer(i, q.ans);
+      oc.appendChild(btn);
+    });
+
+  } else if (q.type === 'text-to-sign') {
+    sd.style.display = 'block';
+    sd.className = 'sign-display reverse';
+    sd.innerHTML = `
+      <span class="q-direction">🔤 Find the sign</span>
+      <div class="sign-label">Sign this in ISL</div>
+      <div style="font-size:32px;font-weight:700;margin:8px 0">${q.word}</div>`;
+    el('qText').textContent = q.q;
+    oc.className = 'options';
+    q.opts.forEach((o, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option-btn';
+      btn.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${o}</span>`;
+      btn.onclick = () => pickAnswer(i, q.ans);
+      oc.appendChild(btn);
+    });
+  }
+
+  el('feedback').className = 'feedback';
+  el('nextBtn').classList.remove('show');
+}
+
+function pickAnswer(idx, correctIdx) {
+  if (answered) return;
+  answered = true;
+  const q = curQs[curIdx];
+  const btns = document.querySelectorAll('.option-btn');
+  const fb = el('feedback');
+  btns.forEach(b => b.classList.add('disabled'));
+
+  if (idx === correctIdx) {
+    btns[idx].classList.add('correct');
+    fb.className = 'feedback correct show';
+    fb.innerHTML = `✅ Correct!${q.tip ? '<span class="fb-tip">💡 ' + q.tip + '</span>' : ''}`;
+    score++;
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[correctIdx].classList.add('correct');
+    const correctText = q._opts ? q._opts[correctIdx] : q.opts[correctIdx];
+    fb.className = 'feedback wrong show';
+    fb.innerHTML = `❌ Wrong — the answer is "<b>${correctText}</b>"${q.tip ? '<span class="fb-tip">💡 ' + q.tip + '</span>' : ''}`;
+  }
+  el('nextBtn').classList.add('show');
+  if (idx === correctIdx) {
+  updateAccuracy(true);   // ✅ correct
+  score++;
+} else {
+  updateAccuracy(false);  // ❌ wrong
+}
+if (idx === correctIdx) {
+
+  updateAccuracy(true);
+  updateLearned(q.correct || q._opts[correctIdx]); // 👈 ADD THIS
+
+  score++;
+
+} else {
+
+  updateAccuracy(false);
+
+}
+}
+
+function nextQuestion() {
+  curIdx++;
+  curIdx >= curQs.length ? showResults() : renderQ();
+}
+
+function showResults() {
+  clearInterval(timerInt);
+  el('quizCard').classList.remove('active');
+  el('resultsCard').classList.add('active');
+  const pct = Math.round(score / curQs.length * 100);
+  el('rScore').textContent = pct + '%';
+  el('rCorrect').textContent = score;
+  el('rWrong').textContent = curQs.length - score;
+  el('rTime').textContent = fmt(secs);
+  if (pct >= 80) { el('rIcon').textContent = '🏆'; el('rTitle').textContent = 'Excellent!'; }
+  else if (pct >= 50) { el('rIcon').textContent = '👏'; el('rTitle').textContent = 'Good Job!'; }
+  else { el('rIcon').textContent = '💪'; el('rTitle').textContent = 'Keep Practicing!'; }
+  el('progressBar').style.width = '100%';
+  saveProgress(score);
+}
+
+function retryQuiz() { el('resultsCard').classList.remove('active'); startQuiz(curLevel); }
+
+function el(id) { return document.getElementById(id); }
+function hide(id) { el(id).style.display = 'none'; }
+function startTimer() { clearInterval(timerInt); secs = 0; el('timerVal').textContent = '00:00'; timerInt = setInterval(() => { secs++; el('timerVal').textContent = fmt(secs); }, 1000); }
+function fmt(s) { return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
+function shuffle(a) { for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function saveProgress(sc) {
+  try {
+    let p = JSON.parse(localStorage.getItem('learningProgress') || '{}');
+    p.completed = (p.completed||0) + curQs.length;
+    p.score = (p.score||0) + sc;
+    p.lastQuiz = { level:curLevel, score:sc, total:curQs.length, date:new Date().toISOString() };
+    localStorage.setItem('learningProgress', JSON.stringify(p));
+  } catch(e){}
+}
+
+function handleBack() {
+  const quizCard = el('quizCard');
+  const levelSelector = el('levelSelector');
+  const resultsCard = el('resultsCard');
+
+  if (quizCard.classList.contains('active') || resultsCard.classList.contains('active')) {
+    quizCard.classList.remove('active');
+    resultsCard.classList.remove('active');
+    levelSelector.style.display = 'block';
+
+    // Reset top header button text back to learning
+    document.getElementById('headerBackBtn').innerText = '← Learning';
+    clearInterval(timerInt);
+  } else {
+    window.location.href = 'learning.html';
+  }
+}
+
+function goBack() {
+  handleBack();
+}
+function updateAccuracy(isCorrect) {
+  let data = JSON.parse(localStorage.getItem("progress")) || {
+    correct: 0,
+    total: 0
+  };
+
+  data.total++;
+
+  if (isCorrect) {
+    data.correct++;
+  }
+
+  localStorage.setItem("progress", JSON.stringify(data));
+}
+function updateLearned(sign) {
+
+  let data = JSON.parse(localStorage.getItem("progress")) || {
+    learned: []
+  };
+
+  // convert to string (important for numbers)
+  sign = String(sign);
+
+  if (!data.learned.includes(sign)) {
+    data.learned.push(sign);
+  }
+
+  localStorage.setItem("progress", JSON.stringify(data));
+}
+</script>
+<!-- ✅ NEW: Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

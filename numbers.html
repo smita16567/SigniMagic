@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Number Learning</title>
+<!-- ✅ NEW: PWA Support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to right, #f7971e, #ffd200);
+  text-align: center;
+}
+.header {
+  background: #222;
+  color: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(5, 60px);
+  gap: 10px;
+  justify-content: center;
+  margin: 20px;
+}
+.number-btn {
+  padding: 15px;
+  font-size: 18px;
+  font-weight: bold;
+  background: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  transition: 0.3s;
+}
+.number-btn:hover {
+  background: #ff6f00;
+  color: white;
+  transform: scale(1.1);
+}
+.card {
+  width: 300px;
+  background: white;
+  margin: 20px auto;
+  padding: 20px;
+  border-radius: 15px;
+  display: none;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+#numberDisplay { font-size: 60px; margin: 0; }
+#wordDisplay { font-size: 18px; color: #555; margin: 5px 0 15px; }
+img { width: 150px; height: 150px; object-fit: contain; }
+.controls {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+button { cursor: pointer; }
+.score { margin-top: 10px; font-weight: bold; }
+</style>
+</head>
+
+<body>
+<div class="header">
+  <button onclick="goBack()">⬅ Learning</button>
+  <h2>🔢 Number Learning</h2>
+  <button onclick="openSettings()">⚙️</button>
+</div>
+
+<div class="grid" id="numberGrid"></div>
+
+<div class="card" id="card">
+  <h2 id="numberDisplay"></h2>
+  <p id="wordDisplay"></p>
+  <img id="numberImage" src="" onerror="this.src='default.png'">
+  <div class="controls">
+    <button onclick="prev()">⬅</button>
+    <button onclick="speak()">🔊</button>
+    <button onclick="next()">➡</button>
+  </div>
+  
+
+<script>
+const numbers = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
+
+const numberWords = {
+  1:"One", 2:"Two", 3:"Three", 4:"Four", 5:"Five",
+  6:"Six", 7:"Seven", 8:"Eight", 9:"Nine", 10:"Ten",
+  11:"Eleven", 12:"Twelve", 13:"Thirteen", 14:"Fourteen", 15:"Fifteen",
+  16:"Sixteen", 17:"Seventeen", 18:"Eighteen", 19:"Nineteen", 20:"Twenty"
+};
+
+const grid = document.getElementById("numberGrid");
+let current = 0;
+
+numbers.forEach((n, i) => {
+  let btn = document.createElement("button");
+  btn.innerText = n;
+  btn.className = "number-btn";
+  btn.onclick = () => show(i);
+  grid.appendChild(btn);
+});
+
+function show(i) {
+  current = i;
+  let num = numbers[i];
+  document.getElementById("card").style.display = "block";
+  document.getElementById("numberDisplay").innerText = num;
+  document.getElementById("wordDisplay").innerText = numberWords[num];
+  document.getElementById("numberImage").src = "Numbers/" + num + ".png";
+  speakNumber(numberWords[num]);
+  updateProgress();
+}
+
+function next() {
+  current = (current + 1) % numbers.length;
+  show(current);
+}
+
+function prev() {
+  current = (current - 1 + numbers.length) % numbers.length;
+  show(current);
+}
+
+function speakNumber(text) {
+  let s = new SpeechSynthesisUtterance(text);
+  s.rate = 0.9;
+  speechSynthesis.speak(s);
+}
+
+function speak() {
+  speakNumber(numberWords[numbers[current]]);
+}
+
+
+function goBack() { window.location.href = "learning.html"; }
+function openSettings() { window.location.href = "setting.html"; }
+</script>
+<!-- ✅ NEW: Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

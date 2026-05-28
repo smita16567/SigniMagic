@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ISL Translator — Indian Sign Language</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a12;--surface:#12121e;--card:#1a1a2e;--border:#2a2a45;
+  --accent:#6c63ff;--green:#43e97b;--red:#ff6584;--text:#f0f0ff;--muted:#7070a0;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:0 0 4rem}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 50% at 15% 20%,rgba(108,99,255,.13) 0%,transparent 60%),radial-gradient(ellipse 50% 50% at 85% 80%,rgba(67,233,123,.07) 0%,transparent 60%);pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 1.5rem}
+
+/* ── SETUP BANNER ── */
+#setup{background:#1a1a2e;border:1.5px solid #ff6584;border-radius:16px;padding:1.2rem 1.5rem;margin:1.5rem 0;display:none}
+#setup h3{color:#ff9ab0;font-size:15px;font-family:'Syne',sans-serif;margin-bottom:.8rem}
+#setup ol{padding-left:1.3rem;font-size:13px;color:#ccc;line-height:2.2}
+#setup code{background:#0a0a12;border:1px solid #333;border-radius:5px;padding:2px 8px;font-family:monospace;color:#43e97b;font-size:12px}
+#setup .tip{margin-top:.8rem;background:rgba(67,233,123,.07);border:1px solid rgba(67,233,123,.25);border-radius:10px;padding:.7rem 1rem;font-size:12px;color:#9fe;line-height:1.7}
+
+/* ── HEADER ── */
+header{text-align:center;padding:2.5rem 0 1.5rem}
+.badge{display:inline-flex;align-items:center;gap:7px;background:rgba(108,99,255,.15);border:1px solid rgba(108,99,255,.35);border-radius:100px;padding:5px 15px;font-size:12px;color:#a8a0ff;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1rem}
+.dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+h1{font-family:'Syne',sans-serif;font-size:clamp(2rem,5vw,3.2rem);font-weight:800;letter-spacing:-.03em;background:linear-gradient(135deg,#f0f0ff,#a8a0ff,#6c63ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1}
+.sub{color:var(--muted);margin-top:.6rem;font-size:1rem}
+.langs{display:flex;justify-content:center;gap:8px;margin-top:1.2rem;flex-wrap:wrap}
+.lang{padding:7px 18px;border-radius:100px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;transition:.2s}
+.lang:hover{border-color:var(--accent);color:var(--text)}
+.lang.on{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 0 14px rgba(108,99,255,.45)}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1rem}
+
+/* ── TEXTAREA ── */
+.ta-wrap{position:relative}
+textarea{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:1rem;padding:1rem 1.2rem 2.2rem;resize:none;height:100px;outline:none;transition:.2s}
+textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.12)}
+textarea::placeholder{color:var(--muted)}
+.cc{position:absolute;bottom:10px;right:12px;font-size:11px;color:var(--muted)}
+
+/* ── BUTTONS ── */
+.btns{display:flex;gap:8px;margin-top:.8rem;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:11px;border:none;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;transition:.2s}
+.btn-go{background:linear-gradient(135deg,#6c63ff,#8b83ff);color:#fff;box-shadow:0 4px 14px rgba(108,99,255,.4)}
+.btn-go:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(108,99,255,.5)}
+.btn-mic{background:var(--surface);color:var(--text);border:1.5px solid var(--border)}
+.btn-mic:hover{border-color:var(--red);color:var(--red)}
+.btn-mic.rec{background:rgba(255,101,132,.12);border-color:var(--red);color:var(--red);animation:ripple 1.2s infinite}
+@keyframes ripple{0%,100%{box-shadow:0 0 0 0 rgba(255,101,132,.4)}50%{box-shadow:0 0 0 8px rgba(255,101,132,0)}}
+.btn-clr{background:transparent;color:var(--muted);border:1.5px solid var(--border)}
+.btn-clr:hover{color:var(--text);border-color:#555}
+
+/* ── STATUS ── */
+.status{padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px;color:var(--muted);margin-top:.7rem;min-height:36px;display:flex;align-items:center;gap:8px;line-height:1.4}
+.status.ok{color:var(--green);border-color:rgba(67,233,123,.3)}
+.status.err{color:var(--red);border-color:rgba(255,101,132,.3)}
+
+/* ── PROGRESS ── */
+.prog-wrap{height:4px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:.5rem;display:none}
+.prog-wrap.show{display:block}
+.prog{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:4px;transition:width .3s;width:0%}
+
+/* ── DIVIDER ── */
+.div-line{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;letter-spacing:.07em;text-transform:uppercase;margin:1rem 0}
+.div-line::before,.div-line::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── TOKENS ── */
+.tokens{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:1rem;min-height:32px}
+.tk{padding:4px 13px;border-radius:100px;border:1px solid var(--border);background:var(--surface);font-size:13px;color:var(--muted);transition:.25s}
+.tk.hit{background:rgba(108,99,255,.13);border-color:rgba(108,99,255,.5);color:#a8a0ff}
+.tk.now{background:rgba(67,233,123,.15);border-color:rgba(67,233,123,.5);color:var(--green);transform:scale(1.06);box-shadow:0 0 10px rgba(67,233,123,.25)}
+.tk.miss{background:rgba(255,101,132,.08);border-color:rgba(255,101,132,.3);color:#ff9ab0}
+
+/* ── VIDEO + QUEUE ── */
+.vs{display:grid;grid-template-columns:1fr 240px;gap:1rem}
+@media(max-width:620px){.vs{grid-template-columns:1fr}}
+.stage{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;overflow:hidden;aspect-ratio:4/3;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.stage-ph{opacity:.35;text-align:center;pointer-events:none}
+.stage-ph span{font-size:3rem;display:block}
+.stage-ph p{font-size:13px;color:var(--muted)}
+#vid{width:100%;height:100%;object-fit:contain;display:none;position:absolute;inset:0}
+.np{position:absolute;bottom:10px;left:10px;right:10px;background:rgba(10,10,18,.88);backdrop-filter:blur(8px);border-radius:9px;padding:7px 11px;display:none;align-items:center;gap:8px;font-size:13px;border:1px solid var(--border)}
+.np.show{display:flex}
+.np-dot{width:7px;height:7px;background:var(--green);border-radius:50%;animation:blink 1s infinite;flex-shrink:0}
+.np-word{color:var(--green);font-family:'Syne',sans-serif;font-weight:700}
+
+.queue{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1rem}
+.sec-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px}
+.ql{display:flex;flex-direction:column;gap:5px;max-height:230px;overflow-y:auto}
+.ql::-webkit-scrollbar{width:3px}
+.ql::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.qi{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:9px;border:1px solid transparent;font-size:13px}
+.qi.pend{color:var(--muted)}
+.qi.cur{background:rgba(67,233,123,.1);border-color:rgba(67,233,123,.3);color:var(--green)}
+.qi.done{color:rgba(108,99,255,.5);text-decoration:line-through}
+.qn{width:18px;height:18px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.qi.cur .qn{background:var(--green);color:#0a0a12}
+
+/* ── STATS ── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:1rem}
+@media(max-width:500px){.stats{grid-template-columns:1fr 1fr}}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px;text-align:center}
+.sv{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;background:linear-gradient(135deg,var(--green),#a8a0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sl{font-size:11px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.06em}
+
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:2rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- SETUP BANNER -->
+<div id="setup">
+  <h3>⚠️ Action Required — Mic &amp; Videos need a local server to work</h3>
+  <ol>
+    <li>Open this project folder in <strong>VS Code</strong></li>
+    <li>Install extension: <strong>Live Server</strong> by Ritwick Dey</li>
+    <li>Right-click <code>index.html</code> in the Explorer panel</li>
+    <li>Click <strong>"Open with Live Server"</strong> — Chrome opens at <code>http://127.0.0.1:5500</code></li>
+    <li>Your video folder must be in the <strong>same folder</strong> as <code>index.html</code> and named exactly:<br>
+        <code>INDIAN SIGN LANGUAGE ANIMATED VIDEOS</code></li>
+  </ol>
+  <div class="tip">
+    ✅ Correct folder structure:<br>
+    📁 your-project/<br>
+    &nbsp;&nbsp;📄 index.html &nbsp;← this file<br>
+    &nbsp;&nbsp;📁 INDIAN SIGN LANGUAGE ANIMATED VIDEOS/<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;🎬 Hello.mp4<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;🎬 Thank You.mp4 &nbsp;… and all others
+  </div>
+</div>
+
+<header>
+  <div class="badge"><span class="dot"></span>Indian Sign Language · ISL</div>
+  <h1>Speak. Sign.<br>Connect.</h1>
+  <p class="sub">Convert speech or text into ISL animations — English · हिंदी · मराठी</p>
+  <div class="langs">
+    <button class="lang on" onclick="setLang('en',this)">🇬🇧 English</button>
+    <button class="lang" onclick="setLang('hi',this)">🇮🇳 हिंदी</button>
+    <button class="lang" onclick="setLang('mr',this)">🧡 मराठी</button>
+  </div>
+</header>
+
+<!-- Input Card -->
+<div class="card">
+  <div class="ta-wrap">
+    <textarea id="txt" placeholder="Type a sentence… e.g. Hello how are you" maxlength="300" oninput="cc()"></textarea>
+    <span class="cc" id="cc">0/300</span>
+  </div>
+  <div class="btns">
+    <button class="btn btn-go" onclick="go()">✦ Translate to ISL</button>
+    <button class="btn btn-mic" id="micBtn" onclick="toggleMic()">🎙 Start Speaking</button>
+    <button class="btn btn-clr" onclick="clearAll()">✕ Clear</button>
+  </div>
+  <div class="status" id="st">Ready — type a sentence or click "Start Speaking"</div>
+  <div class="prog-wrap" id="pw"><div class="prog" id="pb"></div></div>
+</div>
+
+<!-- Output Card -->
+<div class="card">
+  <div class="div-line">Sign Output</div>
+  <div class="tokens" id="tks"></div>
+
+  <div class="vs">
+    <!-- Video stage -->
+    <div class="stage">
+      <div class="stage-ph" id="ph">
+        <span>🤟</span>
+        <p>Sign animation appears here</p>
+      </div>
+      <video id="vid" playsinline></video>
+      <div class="np" id="np">
+        <span class="np-dot"></span>
+        <span style="color:#999">Signing:</span>
+        <span class="np-word" id="npw"></span>
+        <span id="npcount" style="margin-left:auto;color:var(--muted);font-size:11px"></span>
+      </div>
+    </div>
+
+    <!-- Queue -->
+    <div class="queue">
+      <div class="sec-lbl">Sign Queue</div>
+      <div class="ql" id="ql"></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="sc"><div class="sv" id="sT">0</div><div class="sl">Words</div></div>
+    <div class="sc"><div class="sv" id="sM">0</div><div class="sl">Signed</div></div>
+    <div class="sc"><div class="sv" id="sA">—</div><div class="sl">Accuracy</div></div>
+  </div>
+</div>
+
+<footer>ISL Module · 150+ signs · English · हिंदी · मराठी</footer>
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+// VIDEO FOLDER PATH — change only if your folder
+// has a different name
+// ════════════════════════════════════════════════
+const VID_FOLDER = 'ISL_VIDEOS/';
+
+// ════════════════════════════════════════════════
+// FULL VOCABULARY (all your video files)
+// ════════════════════════════════════════════════
+const VOC = [
+  '0','1','2','3','4','5','6','7','8','9',
+  'A','B','C','D','E','F','G','H','I','J','K','L','M',
+  'N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
+  'After','Again','Against','Age','All','Alone','Also','And','Ask','At',
+  'Be','Beautiful','Before','Best','Better','Busy','But','Bye',
+  'Can','Cannot','Change','College','Come','Computer',
+  'Day','Distance','Do Not','Do','Does Not',
+  'Eat','Engineer',
+  'Fight','Finish','From',
+  'Glitter','Go','God','Gold','Good','Great',
+  'Hand','Hands','Happy','Hello','Help','Her','Here','His','Home','Homepage','How',
+  'Invent','It','Keep',
+  'Language','Laugh','Learn',
+  'ME','More','My',
+  'Name','Next','Not','Now',
+  'Of','On','Our','Out','Pretty',
+  'Right',
+  'Sad','Safe','See','Self','Sign','Sing','So','Sound','Stay','Study',
+  'Talk','Television','Thank You','Thank','That','They','This','Those','Time','To','Type',
+  'Us',
+  'Walk','Wash','Way','We','Welcome','What','When','Where','Which',
+  'Who','Whole','Whose','Why','Will','With','Without','Words','Work','World','Wrong',
+  'You','Your','Yourself'
+];
+
+const MAP = {};
+VOC.forEach(w => MAP[w.toLowerCase()] = w);
+
+// ════════════════════════════════════════════════
+// LANGUAGE MAPS  Hindi / Marathi → English
+// ════════════════════════════════════════════════
+const HI = {
+  'नमस्ते':'Hello','नमस्कार':'Hello','हाँ':'Yes','नहीं':'Not',
+  'धन्यवाद':'Thank You','कैसे':'How','कैसा':'How','कैसी':'How',
+  'मैं':'ME','अच्छा':'Good','बुरा':'Sad','घर':'Home',
+  'स्कूल':'College','कॉलेज':'College','खाना':'Eat','खाओ':'Eat',
+  'समय':'Time','नाम':'Name','भाषा':'Language',
+  'बोलो':'Talk','चलो':'Walk','देखो':'See','जाओ':'Go',
+  'आओ':'Come','रुको':'Stay','पढ़ो':'Learn','सीखो':'Learn',
+  'खुश':'Happy','उदास':'Sad','सुरक्षित':'Safe','अकेला':'Alone',
+  'हाथ':'Hand','दुनिया':'World','काम':'Work','मदद':'Help',
+  'पहले':'Before','बाद':'After','सही':'Right','गलत':'Wrong',
+  'खुद':'Self','वे':'They','वो':'They','हम':'We',
+  'तुम':'You','आप':'You','यह':'This','वह':'That',
+  'यहाँ':'Here','कब':'When','कहाँ':'Where','क्यों':'Why',
+  'क्या':'What','कौन':'Who','रहो':'Stay','मेरा':'My',
+  'तेरा':'Your','हमारा':'Our','बाहर':'Out','साथ':'With',
+  'बिना':'Without','सब':'All','अभी':'Now','अगला':'Next',
+  'कंप्यूटर':'Computer','गाना':'Sing','आवाज':'Sound',
+  'टेलीविजन':'Television','दूरी':'Distance','लड़ाई':'Fight',
+};
+
+const MR = {
+  'नमस्कार':'Hello','नमस्ते':'Hello','होय':'Yes','नाही':'Not',
+  'धन्यवाद':'Thank You','कसे':'How','कसा':'How','मी':'ME',
+  'चांगले':'Good','वाईट':'Sad','घर':'Home','शाळा':'College',
+  'महाविद्यालय':'College','जेवण':'Eat','खाणे':'Eat','वेळ':'Time',
+  'नाव':'Name','भाषा':'Language','बोला':'Talk','चला':'Walk',
+  'पाहा':'See','जा':'Go','या':'Come','थांबा':'Stay',
+  'शिका':'Learn','आनंदी':'Happy','दुःखी':'Sad','सुरक्षित':'Safe',
+  'एकटे':'Alone','हात':'Hand','जग':'World','काम':'Work',
+  'मदत':'Help','आधी':'Before','नंतर':'After','बरोबर':'Right',
+  'चुकीचे':'Wrong','स्वतः':'Self','ते':'They','आपण':'We',
+  'आमचा':'Our','तुमचा':'Your','माझा':'My','हे':'This',
+  'इथे':'Here','केव्हा':'When','कुठे':'Where','का':'Why',
+  'काय':'What','कोण':'Who','कोणता':'Which','सर्व':'All',
+  'आता':'Now','बाहेर':'Out','सोबत':'With','शिवाय':'Without',
+  'पुढे':'Next','संगणक':'Computer','गाणे':'Sing','आवाज':'Sound',
+  'दूरदर्शन':'Television',
+};
+
+// ════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════
+let lang = 'en', isRec = false, recog = null;
+let queue = [], idx = 0, playing = false;
+
+// ════════════════════════════════════════════════
+// INIT — detect file:// protocol
+// ════════════════════════════════════════════════
+window.onload = function() {
+  if (location.protocol === 'file:') {
+    document.getElementById('setup').style.display = 'block';
+  }
+};
+
+// ════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════
+function cc() {
+  document.getElementById('cc').textContent =
+    document.getElementById('txt').value.length + '/300';
+}
+
+function st(msg, cls='') {
+  const el = document.getElementById('st');
+  el.textContent = msg;
+  el.className = 'status' + (cls ? ' '+cls : '');
+}
+
+function setLang(l, btn) {
+  lang = l;
+  document.querySelectorAll('.lang').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const ph = {
+    en: 'Type a sentence… e.g. Hello how are you',
+    hi: 'हिंदी में लिखें… जैसे: नमस्ते कैसे हो',
+    mr: 'मराठीत लिहा… जसे: नमस्कार कसे आहात'
+  };
+  document.getElementById('txt').placeholder = ph[l];
+  st('Language set to ' + (l==='en'?'English':l==='hi'?'Hindi':'Marathi'));
+}
+
+function clearAll() {
+  document.getElementById('txt').value = '';
+  document.getElementById('cc').textContent = '0/300';
+  document.getElementById('tks').innerHTML = '';
+  document.getElementById('ql').innerHTML = '';
+  const v = document.getElementById('vid');
+  v.pause(); v.removeAttribute('src'); v.style.display='none';
+  document.getElementById('ph').style.display='flex';
+  document.getElementById('np').classList.remove('show');
+  document.getElementById('pw').classList.remove('show');
+  queue=[]; idx=0; playing=false;
+  ['sT','sM','sA'].forEach((id,i)=>document.getElementById(id).textContent=['0','0','—'][i]);
+  st('Cleared — ready for new input');
+}
+
+// ════════════════════════════════════════════════
+// TOKENIZER — 3-layer: phrase → word → letters
+// ════════════════════════════════════════════════
+function tokenize(text) {
+  // Layer 0: translate Hindi/Marathi
+  const wmap = lang==='hi' ? HI : lang==='mr' ? MR : null;
+  if (wmap) {
+    text = text.split(/\s+/).map(w => wmap[w] || w).join(' ');
+  }
+
+  // Layer 1: multi-word phrases (longest first)
+  const phrases = VOC.filter(v=>v.includes(' ')).sort((a,b)=>b.length-a.length);
+  let lo = text.toLowerCase();
+  const phMap = {};
+  phrases.forEach(p => {
+    const k = `__${Object.keys(phMap).length}__`;
+    if (lo.includes(p.toLowerCase())) {
+      lo = lo.split(p.toLowerCase()).join(k);
+      phMap[k] = p;
+    }
+  });
+
+  // Layer 2 & 3: word → letter fallback
+  const tokens = [];
+  lo.trim().split(/\s+/).forEach(raw => {
+    if (!raw) return;
+    if (phMap[raw]) { tokens.push({w:phMap[raw], ok:true}); return; }
+    const clean = raw.replace(/[^a-z0-9\u0900-\u097F]/gi,'').toLowerCase();
+    if (!clean) return;
+    if (MAP[clean]) { tokens.push({w:MAP[clean], ok:true}); return; }
+    // Spell it out letter by letter
+    for (const ch of clean.toUpperCase()) {
+      if (MAP[ch.toLowerCase()] || /\d/.test(ch)) {
+        tokens.push({w:ch, ok:true, ltr:true});
+      } else {
+        tokens.push({w:ch, ok:false});
+      }
+    }
+  });
+  return tokens;
+}
+
+// ════════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════════
+function renderTokens(tks) {
+  const el = document.getElementById('tks');
+  el.innerHTML = '';
+  tks.forEach((t,i) => {
+    const s = document.createElement('span');
+    s.className = 'tk '+(t.ok?'hit':'miss');
+    s.id = 'tk'+i;
+    s.textContent = t.ltr ? '['+t.w+']' : t.w;
+    el.appendChild(s);
+  });
+}
+
+function renderQueue(q) {
+  const el = document.getElementById('ql');
+  el.innerHTML = '';
+  q.forEach((item,i) => {
+    const d = document.createElement('div');
+    d.className='qi pend'; d.id='qi'+i;
+    d.innerHTML=`<span class="qn">${i+1}</span>${item.w}`;
+    el.appendChild(d);
+  });
+}
+
+// ════════════════════════════════════════════════
+// TRANSLATE
+// ════════════════════════════════════════════════
+function go() {
+  const text = document.getElementById('txt').value.trim();
+  if (!text) { st('Please type or speak a sentence first','err'); return; }
+
+  const tks = tokenize(text);
+  queue = tks.filter(t=>t.ok);
+
+  document.getElementById('sT').textContent = tks.length;
+  document.getElementById('sM').textContent = queue.length;
+  document.getElementById('sA').textContent = tks.length>0
+    ? Math.round(queue.length/tks.length*100)+'%' : '—';
+
+  renderTokens(tks);
+  renderQueue(queue);
+
+  if (!queue.length) {
+    st('No matching ISL signs found — try simpler words or check spelling','err');
+    return;
+  }
+
+  document.getElementById('pw').classList.add('show');
+  st('Found '+queue.length+' sign(s) — starting playback…','ok');
+  idx=0; playing=true;
+  playNext();
+}
+
+// ════════════════════════════════════════════════
+// VIDEO PLAYBACK
+// ════════════════════════════════════════════════
+function playNext() {
+  if (idx >= queue.length) { finishAll(); return; }
+
+  const item = queue[idx];
+  document.getElementById('pb').style.width = Math.round(idx/queue.length*100)+'%';
+
+  // Queue highlight
+  document.querySelectorAll('.qi').forEach((el,i) => {
+    el.className = 'qi '+(i<idx?'done':i===idx?'cur':'pend');
+    if (i===idx) el.scrollIntoView({block:'nearest',behavior:'smooth'});
+  });
+
+  // Token highlight
+  let mc=0;
+  document.querySelectorAll('.tk').forEach(el => {
+    if (el.classList.contains('hit')||el.classList.contains('now')) {
+      el.className='tk '+(mc<idx?'hit':mc===idx?'now':'hit');
+      mc++;
+    }
+  });
+
+  // Now Playing bar
+  document.getElementById('npw').textContent = item.w;
+  document.getElementById('npcount').textContent = (idx+1)+'/'+queue.length;
+  document.getElementById('np').classList.add('show');
+  st('Signing: "'+item.w+'"  ('+(idx+1)+' / '+queue.length+')','ok');
+
+  // Load & play video
+  const v = document.getElementById('vid');
+  document.getElementById('ph').style.display='none';
+  v.style.display='block';
+  v.src = VID_FOLDER + item.w + '.mp4';
+  v.load();
+  v.play().catch(()=>{ idx++; playNext(); });
+}
+
+const vid = document.getElementById('vid');
+vid.addEventListener('ended', ()=>{ idx++; setTimeout(playNext,150); });
+vid.addEventListener('error', ()=>{ idx++; playNext(); });
+
+function finishAll() {
+  playing=false;
+  document.getElementById('pb').style.width='100%';
+  document.getElementById('np').classList.remove('show');
+  vid.pause(); vid.style.display='none';
+  const ph = document.getElementById('ph');
+  ph.style.display='flex';
+  ph.innerHTML='<span style="font-size:2.5rem;display:block">✅</span><p style="color:#43e97b;font-size:14px">All signs complete!</p>';
+  document.querySelectorAll('.qi').forEach(el=>el.className='qi done');
+  document.querySelectorAll('.tk.now').forEach(el=>el.className='tk hit');
+  const acc = document.getElementById('sA').textContent;
+  st('Done! Accuracy: '+acc+' — all '+queue.length+' signs played','ok');
+}
+
+// ════════════════════════════════════════════════
+// SPEECH RECOGNITION
+// ════════════════════════════════════════════════
+function toggleMic() {
+  if (isRec) { stopMic(); return; }
+
+  if (location.protocol === 'file:') {
+    st('❌ Mic blocked on file:// — use Live Server in VS Code (see instructions above)','err');
+    document.getElementById('setup').style.display='block';
+    return;
+  }
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    st('❌ Speech recognition only works in Google Chrome','err');
+    return;
+  }
+
+  recog = new SR();
+  recog.lang = {en:'en-IN', hi:'hi-IN', mr:'mr-IN'}[lang];
+  recog.interimResults = true;
+  recog.continuous = true;
+  recog.maxAlternatives = 3;
+
+  recog.onstart = () => {
+    isRec = true;
+    const b = document.getElementById('micBtn');
+    b.textContent = '⏹ Stop Recording';
+    b.className = 'btn btn-mic rec';
+    st('🎙 Listening in '+{en:'English',hi:'Hindi',mr:'Marathi'}[lang]+'… speak now','ok');
+  };
+
+  recog.onresult = (e) => {
+    let fin='';
+    for (let i=e.resultIndex; i<e.results.length; i++) {
+      if (e.results[i].isFinal) fin += e.results[i][0].transcript+' ';
+      else st('Hearing: "'+e.results[i][0].transcript+'"','ok');
+    }
+    if (fin) {
+      document.getElementById('txt').value =
+        (document.getElementById('txt').value+' '+fin).trim();
+      cc();
+    }
+  };
+
+  recog.onerror = (e) => {
+    const msgs = {
+      'not-allowed':'❌ Microphone access blocked — click the 🔒 icon in address bar and allow mic',
+      'no-speech':'No speech detected — please speak louder or closer to mic',
+      'network':'Network error — check your internet connection',
+      'audio-capture':'No microphone found — please connect a mic',
+      'aborted':'Recording stopped',
+    };
+    st(msgs[e.error]||'Mic error: '+e.error,'err');
+    stopMic();
+  };
+
+  recog.onend = () => { if (isRec) recog.start(); };
+  recog.start();
+}
+
+function stopMic() {
+  if (recog) { try{ recog.stop(); }catch(e){} recog=null; }
+  isRec=false;
+  const b = document.getElementById('micBtn');
+  b.textContent='🎙 Start Speaking';
+  b.className='btn btn-mic';
+  st('Recording stopped — click "Translate to ISL"');
+}
+</script>
+</body>
+</html>

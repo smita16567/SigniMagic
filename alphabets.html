@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alphabet Learning</title>
+<!-- ✅ NEW: PWA Support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to right, #4facfe, #00f2fe);
+  text-align: center;
+}
+
+/* Header */
+.header {
+  background: #222;
+  color: white;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, 60px);
+  gap: 10px;
+  justify-content: center;
+  margin: 20px;
+}
+
+/* Buttons */
+.letter-btn {
+  padding: 15px;
+  background: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.letter-btn:hover {
+  background: #007bff;
+  color: white;
+}
+
+/* Card */
+.card {
+  width: 300px;
+  background: white;
+  margin: auto;
+  padding: 20px;
+  border-radius: 15px;
+  display: none;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+#letterDisplay {
+  font-size: 60px;
+}
+
+img {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Quiz */
+.quiz-btn {
+  margin-top: 10px;
+  padding: 10px;
+  background: green;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
+
+/* Score */
+.score {
+  margin-top: 10px;
+  font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <button onclick="goBack()">⬅ Learning</button>
+  <h2>🔤 Alphabet Learning</h2>
+  <button onclick="openSettings()">⚙️</button>
+</div>
+
+<div class="grid" id="alphabetGrid"></div>
+
+<div class="card" id="card">
+  <h2 id="letterDisplay"></h2>
+  <p id="wordDisplay"></p>
+
+  <img id="letterImage" src="" onerror="this.src='default.png'">
+
+  <div class="controls">
+    <button onclick="prev()">⬅</button>
+    <button onclick="speak()">🔊</button>
+    <button onclick="next()">➡</button>
+  </div>
+
+
+
+<script>
+const alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+const grid = document.getElementById("alphabetGrid");
+let current = 0;
+
+
+// Create Buttons
+alphabets.forEach((l, i) => {
+  let btn = document.createElement("button");
+  btn.innerText = l;
+  btn.className = "letter-btn";
+  btn.onclick = () => show(i);
+  grid.appendChild(btn);
+});
+
+function show(i) {
+  current = i;
+  let letter = alphabets[i];
+
+  document.getElementById("card").style.display = "block";
+  document.getElementById("letterDisplay").innerText = letter;
+  document.getElementById("letterImage").src = `Alphabets/${letter}.jpeg`;
+  document.getElementById("wordDisplay").innerText = words[letter] || "";
+
+  speakLetter(letter);
+  updateProgress();
+}
+
+function next() {
+  current = (current + 1) % alphabets.length;
+  show(current);
+}
+
+function prev() {
+  current = (current - 1 + alphabets.length) % alphabets.length;
+  show(current);
+}
+
+// Speech
+function speakLetter(text) {
+  let s = new SpeechSynthesisUtterance(text);
+  speechSynthesis.speak(s);
+}
+
+function speak() {
+  speakLetter(alphabets[current]);
+}
+
+
+
+// Navigation
+function goBack() {
+  window.location.href = "learning.html";
+}
+
+function openSettings() {
+  window.location.href = "setting.html";
+}
+</script>
+ </body>
+
+<!-- ✅ NEW: Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

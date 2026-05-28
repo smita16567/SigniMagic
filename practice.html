@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Practice Module</title>
+<!-- ✅ NEW: PWA Support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body { font-family: Arial; background:#f4f4f4; }
+
+.container {
+  max-width:700px;
+  margin:30px auto;
+  background:#fff;
+  padding:20px;
+  border-radius:12px;
+  text-align:center;
+}
+
+.sign-img {
+  width:150px;
+  height:150px;
+  margin:0 auto 20px;
+  border:2px solid #ddd;
+  border-radius:10px;
+}
+
+.options {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.option-btn {
+  padding:10px;
+  border:2px solid #ddd;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.option-btn:hover {
+  background:#e8f5e9;
+  border-color:#4CAF50;
+}
+
+.correct { background:#c8e6c9; }
+.wrong { background:#ffcdd2; }
+
+.feedback {
+  margin-top:10px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <h1>🎯 Practice Mode (A–Z & 1–20)</h1>
+
+  <img id="img" class="sign-img">
+  <h2 id="question">Identify this sign</h2>
+
+  <div id="options" class="options"></div>
+  <p id="feedback"></p>
+</div>
+
+<script>
+
+// ===== DATA =====
+
+// Alphabets A-Z
+const alphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+// Numbers 1–20
+const numbers = Array.from({length:20}, (_,i)=> i+1);
+
+// ===== IMAGE PATH =====
+const IMG = {
+  alpha: (l) => `/Alphabets/${l}.jpeg`,
+  num: (n) => `/Numbers/${n}.png`
+};
+
+// ===== GENERATE QUESTIONS =====
+let questions = [];
+
+// Alphabets
+alphabets.forEach(l => {
+  questions.push({
+    image: IMG.alpha(l),
+    correct: l,
+    options: getOptions(l, alphabets)
+  });
+});
+
+// Numbers
+numbers.forEach(n => {
+  questions.push({
+    image: IMG.num(n),
+    correct: String(n),
+    options: getOptions(String(n), numbers.map(String))
+  });
+});
+
+// Shuffle questions
+questions = questions.sort(() => Math.random() - 0.5);
+
+let current = 0;
+
+// ===== FUNCTIONS =====
+
+function getOptions(correct, pool) {
+  let shuffled = [...pool].sort(() => 0.5 - Math.random());
+  let opts = [correct];
+
+  for (let i = 0; i < shuffled.length && opts.length < 4; i++) {
+    if (String(shuffled[i]) !== String(correct)) {
+      opts.push(String(shuffled[i]));
+    }
+  }
+
+  return opts.sort(() => Math.random() - 0.5);
+}
+
+function loadQuestion() {
+  let q = questions[current];
+
+  document.getElementById("img").src = q.image;
+
+  let html = "";
+  q.options.forEach(opt => {
+    html += `<div class="option-btn" onclick="checkAnswer('${opt}')">${opt}</div>`;
+  });
+
+  document.getElementById("options").innerHTML = html;
+  document.getElementById("feedback").innerText = "";
+}
+
+
+  function checkAnswer(selected) {
+  let q = questions[current];
+
+  if (selected === q.correct) {
+
+    updateAccuracy(true);      // already added
+    updateLearned(q.correct);  // 👈 ADD THIS LINE
+
+    document.getElementById("feedback").innerText = "✅ Correct!";
+    setTimeout(nextQuestion, 1000);
+
+  } else {
+
+    updateAccuracy(false);
+
+    document.getElementById("feedback").innerText = "❌ Try Again!";
+  }
+}
+
+
+function nextQuestion() {
+  current++;
+  if (current >= questions.length) current = 0;
+  loadQuestion();
+}
+function updateAccuracy(isCorrect) {
+
+  let data = JSON.parse(localStorage.getItem("progress")) || {
+    correct: 0,
+    total: 0
+  };
+
+  data.total++;
+
+  if (isCorrect) {
+    data.correct++;
+  }
+
+  localStorage.setItem("progress", JSON.stringify(data));
+}
+
+// Start
+loadQuestion();
+function updateLearned(sign) {
+
+  let data = JSON.parse(localStorage.getItem("progress")) || {
+    learned: []
+  };
+
+  // convert to string (important for numbers)
+  sign = String(sign);
+
+  if (!data.learned.includes(sign)) {
+    data.learned.push(sign);
+  }
+
+  localStorage.setItem("progress", JSON.stringify(data));
+}
+</script>
+<!-- ✅ NEW: Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

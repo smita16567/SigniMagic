@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emergency Module</title>
+<!-- ✅ NEW: PWA Support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+<style>
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+/* Body */
+body {
+  background: linear-gradient(to right, #ff416c, #ff4b2b);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Container */
+.container {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  width: 320px;
+  text-align: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
+
+/* Title */
+h1 {
+  margin-bottom: 10px;
+}
+
+/* Subtitle */
+.subtitle {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+/* SOS Button */
+#sosBtn {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: red;
+  color: white;
+  font-size: 28px;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: 0.3s;
+}
+
+#sosBtn:hover {
+  background: darkred;
+  transform: scale(1.1);
+}
+
+/* Status */
+#status {
+  margin: 10px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+/* Buttons */
+.btn {
+  margin: 5px;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #007bff;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn:hover {
+  background: #0056b3;
+}
+
+/* Contact List */
+ul {
+  list-style: none;
+  margin-top: 10px;
+}
+
+ul li {
+  background: #f1f1f1;
+  padding: 8px;
+  margin: 5px 0;
+  border-radius: 5px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>🚨 Emergency Alert</h1>
+    <p class="subtitle">Tap SOS to send alert with your location</p>
+
+    <button id="sosBtn">SOS</button>
+
+    <p id="status"></p>
+
+    <button class="btn" id="addContactBtn">➕ Add Contact</button>
+    <button class="btn" id="clearContactBtn">🗑 Clear Contacts</button>
+
+    <ul id="contactList"></ul>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    const sosBtn = document.getElementById("sosBtn");
+    const addContactBtn = document.getElementById("addContactBtn");
+    const clearContactBtn = document.getElementById("clearContactBtn");
+    const contactList = document.getElementById("contactList");
+    const status = document.getElementById("status");
+
+    function loadContacts() {
+        contactList.innerHTML = "";
+        const contacts = JSON.parse(localStorage.getItem("contacts")) || [];
+        contacts.forEach(contact => {
+            const li = document.createElement("li");
+            li.textContent = contact;
+            contactList.appendChild(li);
+        });
+    }
+
+    loadContacts();
+
+    addContactBtn.addEventListener("click", function() {
+        const number = prompt("Enter contact number:");
+        if (!number) return;
+        let contacts = JSON.parse(localStorage.getItem("contacts")) || [];
+        contacts.push(number);
+        localStorage.setItem("contacts", JSON.stringify(contacts));
+        loadContacts();
+    });
+
+    clearContactBtn.addEventListener("click", function() {
+        localStorage.removeItem("contacts");
+        loadContacts();
+    });
+
+    sosBtn.addEventListener("click", function() {
+        const contacts = JSON.parse(localStorage.getItem("contacts")) || [];
+        if (contacts.length === 0) {
+            alert("⚠️ No contacts added!");
+            return;
+        }
+
+        status.innerText = "📡 Getting location...";
+
+        navigator.geolocation.getCurrentPosition(position => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            const locationLink = `https://maps.google.com/?q=${lat},${lon}`;
+            const message = `🚨 EMERGENCY!\nI need help.\nMy location: ${locationLink}`;
+
+            alert("🚨 Emergency Alert Ready!\n\n" + message);
+
+            let phone = contacts[0];
+            if (!phone.startsWith("+")) phone = "+91" + phone;
+            const smsLink = `sms:${phone}?body=${encodeURIComponent(message)}`;
+
+            window.location.href = smsLink;
+
+            status.innerText = "📩 SMS prepared (check your app)";
+        }, () => {
+            status.innerText = "❌ Location permission denied!";
+            alert("❌ Location permission denied!");
+        });
+    });
+
+});
+</script>
+ </body>
+
+<!-- ✅ NEW: Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>

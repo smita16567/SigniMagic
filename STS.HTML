@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SigniMagic — Sign to Speech</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=Nunito+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<style>
+:root {
+  --bg:#0a0e1a; --bg2:#111827; --bg3:#1a2235;
+  --teal:#00B4D8; --saffron:#FF9F1C; --green:#22C55E; --red:#EF4444;
+  --text:#E2E8F0; --muted:#64748B; --muted2:#94a3b8;
+  --border:rgba(255,255,255,0.08); --card:rgba(255,255,255,0.04);
+  --ring-circ:213.6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito Sans',sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;overflow-x:hidden;
+  background-image:radial-gradient(ellipse 60% 40% at 15% 10%,rgba(0,180,216,.07) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 85% 85%,rgba(255,159,28,.06) 0%,transparent 70%)}
+
+/* ── Loading ── */
+#loadingOvl{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:1000;gap:1rem;transition:opacity .5s}
+#loadingOvl.gone{opacity:0;pointer-events:none}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--teal);
+  border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-t{font-family:'Sora',sans-serif;font-size:.85rem;font-weight:600;color:var(--muted)}
+
+/* ── Header ── */
+header{padding:.85rem 1.5rem;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);backdrop-filter:blur(10px);position:sticky;top:0;z-index:100;
+  background:rgba(10,14,26,.92)}
+.logo{font-family:'Sora',sans-serif;font-size:1.05rem;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(135deg,var(--teal),var(--saffron));-webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;background-clip:text}
+.badge{display:flex;align-items:center;gap:.5rem;font-size:.72rem;font-weight:600;color:var(--muted);
+  background:var(--card);border:1px solid var(--border);padding:.3rem .7rem;border-radius:100px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .3s,box-shadow .3s}
+.dot.live{background:var(--green);box-shadow:0 0 7px var(--green)}
+.dot.on{background:var(--teal);box-shadow:0 0 7px var(--teal)}
+
+/* ── Modes ── */
+.modebar{display:flex;justify-content:center;gap:.5rem;padding:.85rem 1.5rem}
+.mbtn{font-family:'Sora',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;padding:.45rem 1.2rem;border-radius:100px;border:2px solid var(--border);
+  background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.mbtn:hover{border-color:var(--teal);color:var(--teal)}
+.mbtn.a.on{background:var(--teal);border-color:var(--teal);color:#000}
+.mbtn.n.on{background:var(--green);border-color:var(--green);color:#000}
+.mbtn.w.on{background:var(--saffron);border-color:var(--saffron);color:#000}
+
+/* ── Layout ── */
+.main{display:grid;grid-template-columns:1fr 360px;gap:1.25rem;padding:0 1.5rem 1.5rem;
+  max-width:1080px;margin:0 auto}
+@media(max-width:800px){.main{grid-template-columns:1fr}}
+
+/* ── Camera ── */
+.camwrap{position:relative;background:var(--bg2);border:1px solid var(--border);
+  border-radius:16px;overflow:hidden;aspect-ratio:4/3}
+#vid{display:none}
+#cvs{width:100%;height:100%;display:block}
+.camplt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1rem;color:var(--muted)}
+.camplt p{font-size:.82rem}
+.startbtn{font-family:'Sora',sans-serif;font-size:.82rem;font-weight:700;padding:.7rem 1.8rem;
+  background:var(--teal);color:#000;border:none;border-radius:100px;cursor:pointer;
+  transition:all .2s;letter-spacing:.04em}
+.startbtn:hover{transform:scale(1.05);box-shadow:0 4px 20px rgba(0,180,216,.4)}
+.confbar{position:absolute;bottom:10px;left:10px;right:10px;display:flex;align-items:center;
+  gap:.65rem;background:rgba(10,14,26,.85);backdrop-filter:blur(8px);
+  border:1px solid var(--border);border-radius:9px;padding:.55rem .85rem;
+  opacity:0;transition:opacity .2s}
+.confbar.on{opacity:1}
+.cflbl{font-size:.68rem;font-weight:700;color:var(--muted2);min-width:55px;
+  font-family:'Sora',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cftrack{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.cffill{height:100%;background:var(--teal);border-radius:2px;transition:width .1s,background .2s}
+.cfpct{font-size:.68rem;font-weight:700;color:var(--teal);min-width:30px;text-align:right;
+  font-family:'Sora',sans-serif}
+
+/* ── Side panel ── */
+.side{display:flex;flex-direction:column;gap:.85rem}
+
+/* ── Sign card ── */
+.signcard{background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:1.25rem;text-align:center;position:relative;overflow:hidden;min-height:160px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.35rem}
+.signcard::before{content:'';position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 0%,rgba(0,180,216,.07) 0%,transparent 70%)}
+
+/* Reference image shown inside sign card on confirm */
+.sign-ref-img{width:72px;height:72px;object-fit:contain;border-radius:10px;
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  display:none;opacity:0;transition:opacity .35s;flex-shrink:0}
+.sign-ref-img.show{display:block;opacity:1}
+
+.signtxt{font-family:'Sora',sans-serif;font-size:2.8rem;font-weight:800;line-height:1;
+  color:var(--text);letter-spacing:-.03em;transition:color .25s;
+  min-height:3.5rem;display:flex;align-items:center;justify-content:center}
+.signtxt.teal{color:var(--teal)}.signtxt.grn{color:var(--green)}.signtxt.sfn{color:var(--saffron)}
+.signlbl{font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);font-family:'Sora',sans-serif}
+
+/* Hold ring */
+.hring{width:90px;height:90px;position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);opacity:0;transition:opacity .2s;pointer-events:none}
+.hring.on{opacity:.65}
+.hring circle{fill:none;stroke:var(--teal);stroke-width:3;stroke-linecap:round;
+  stroke-dasharray:var(--ring-circ);stroke-dashoffset:var(--ring-circ);
+  transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .08s linear}
+
+/* Speak btn */
+.spkbtn{width:100%;font-family:'Sora',sans-serif;font-size:.78rem;font-weight:700;
+  padding:.6rem;border-radius:10px;border:1px solid var(--border);background:var(--card);
+  color:var(--text);cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:.5rem}
+.spkbtn:hover{background:rgba(0,180,216,.12);border-color:var(--teal);color:var(--teal)}
+.spkbtn:disabled{opacity:.35;cursor:default;pointer-events:none}
+
+/* History */
+.histcard{background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:.9rem 1.1rem}
+.cardtitle{font-family:'Sora',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:.65rem;
+  display:flex;align-items:center;justify-content:space-between}
+.clrbtn{font-size:.62rem;color:var(--muted);cursor:pointer;background:none;border:none;
+  padding:0;transition:color .2s}
+.clrbtn:hover{color:var(--red)}
+.histlist{display:flex;flex-wrap:wrap;gap:.3rem;min-height:34px}
+.htag{font-family:'Sora',sans-serif;font-size:.76rem;font-weight:600;
+  padding:.28rem .6rem;border-radius:6px;background:rgba(0,180,216,.1);
+  border:1px solid rgba(0,180,216,.2);color:var(--teal);cursor:pointer;
+  animation:popIn .18s ease;transition:background .15s}
+.htag:hover{background:rgba(0,180,216,.2)}
+@keyframes popIn{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+
+/* Instructions */
+.instrcard{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.9rem 1.1rem}
+.irow{display:flex;gap:.65rem;align-items:flex-start;margin-bottom:.55rem}
+.irow:last-child{margin-bottom:0}
+.inum{width:19px;height:19px;border-radius:50%;flex-shrink:0;background:rgba(0,180,216,.12);
+  border:1px solid rgba(0,180,216,.25);font-family:'Sora',sans-serif;font-size:.62rem;
+  font-weight:700;color:var(--teal);display:flex;align-items:center;justify-content:center}
+.itxt{font-size:.73rem;color:var(--muted2);line-height:1.5}
+
+/* Sentence builder */
+.sbcard{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:.9rem 1.1rem}
+.sbrow{display:flex;gap:.5rem;align-items:center}
+#sentence{flex:1;font-family:'Sora',sans-serif;font-size:.82rem;font-weight:600;
+  color:var(--text);background:transparent;border:none;outline:none;
+  min-height:24px;word-break:break-word}
+.sbbtns{display:flex;gap:.35rem;flex-shrink:0}
+.sbbtn{font-family:'Sora',sans-serif;font-size:.65rem;font-weight:700;padding:.3rem .6rem;
+  border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--muted);
+  cursor:pointer;transition:all .15s}
+.sbbtn:hover{border-color:var(--teal);color:var(--teal)}
+.sbbtn.spk:hover{border-color:var(--saffron);color:var(--saffron)}
+
+/* ── Reference panel ── */
+.refpanel{max-width:1080px;margin:0 auto;padding:0 1.5rem 2rem}
+.refhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
+.reftitle{font-family:'Sora',sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--muted)}
+.img-badge{font-family:'Sora',sans-serif;font-size:.6rem;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;padding:.2rem .6rem;border-radius:100px;
+  background:rgba(255,159,28,.12);border:1px solid rgba(255,159,28,.25);color:var(--saffron)}
+.refgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:.5rem}
+.ritem{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:.5rem;text-align:center;cursor:pointer;transition:all .15s;
+  display:flex;flex-direction:column;align-items:center;gap:.3rem}
+.ritem:hover{border-color:var(--teal);background:rgba(0,180,216,.06);transform:translateY(-2px)}
+.ritem:hover .rthumb{border-color:rgba(0,180,216,.4)}
+.rthumb{width:100%;height:68px;object-fit:contain;border-radius:8px;
+  background:rgba(255,255,255,0.05);border:1px solid var(--border);
+  transition:border-color .15s;display:block}
+.rthumb-placeholder{width:100%;height:68px;border-radius:8px;
+  background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;font-family:'Sora',sans-serif;font-weight:800;color:rgba(255,255,255,0.15)}
+.rthumb.hidden{display:none}
+.rsign{font-family:'Sora',sans-serif;font-size:.82rem;font-weight:700;color:var(--text)}
+.rgesture{font-size:.58rem;color:var(--muted);line-height:1.3}
+
+/* ── Lightbox ── */
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(12px);
+  z-index:500;display:none;align-items:center;justify-content:center;flex-direction:column;gap:1rem}
+#lightbox.show{display:flex}
+#lightbox img{max-width:320px;max-height:320px;object-fit:contain;border-radius:16px;
+  border:2px solid var(--border);background:rgba(255,255,255,.05)}
+#lightbox-label{font-family:'Sora',sans-serif;font-size:1.4rem;font-weight:800;color:var(--text)}
+#lightbox-hint{font-size:.78rem;color:var(--muted2)}
+#lightbox-close{font-family:'Sora',sans-serif;font-size:.75rem;font-weight:700;padding:.45rem 1.2rem;
+  border-radius:100px;border:1px solid var(--border);background:transparent;color:var(--muted);
+  cursor:pointer;transition:all .15s;margin-top:.25rem}
+#lightbox-close:hover{border-color:var(--red);color:var(--red)}
+</style>
+</head>
+<body>
+
+<div id="loadingOvl">
+  <div class="spinner"></div>
+  <div class="load-t">Loading MediaPipe Hands…</div>
+</div>
+
+<!-- Full-size image lightbox -->
+<div id="lightbox" onclick="closeLightbox()">
+  <img id="lb-img" src="" alt="">
+  <div id="lightbox-label"></div>
+  <div id="lightbox-hint"></div>
+  <button id="lightbox-close" onclick="closeLightbox()">Close</button>
+</div>
+
+<header>
+  <div class="logo">SigniMagic · Sign to Speech</div>
+  <div class="badge">
+    <div class="dot" id="dot"></div>
+    <span id="statusTxt">Loading…</span>
+  </div>
+</header>
+
+<div class="modebar">
+  <button class="mbtn a" id="btnA" onclick="setMode('alpha')">Alphabets</button>
+  <button class="mbtn n" id="btnN" onclick="setMode('numbers')">Numbers</button>
+  <button class="mbtn w" id="btnW" onclick="setMode('words')">Words</button>
+</div>
+
+<div class="main">
+  <!-- Camera -->
+  <div class="camwrap">
+    <video id="vid" playsinline></video>
+    <canvas id="cvs"></canvas>
+    <div class="camplt" id="plt">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>
+      </svg>
+      <p>Camera not started</p>
+      <button class="startbtn" onclick="startCam()">Start Camera</button>
+    </div>
+    <div class="confbar" id="cfbar">
+      <span class="cflbl" id="cflbl">—</span>
+      <div class="cftrack"><div class="cffill" id="cffill" style="width:0%"></div></div>
+      <span class="cfpct" id="cfpct">—</span>
+    </div>
+  </div>
+
+  <!-- Side panel -->
+  <div class="side">
+    <!-- Sign display card -->
+    <div class="signcard" id="sc">
+      <svg class="hring" id="hr" viewBox="0 0 90 90">
+        <circle cx="45" cy="45" r="34" id="hc"/>
+      </svg>
+      <!-- Your Firebase reference image appears here after sign is confirmed -->
+      <img class="sign-ref-img" id="signImg" src="" alt=""
+           title="Click for full view"
+           onerror="this.classList.remove('show')"
+           onclick="openImgLightbox()">
+      <div class="signtxt" id="st" style="color:var(--muted)">—</div>
+      <div class="signlbl" id="sl">Waiting for hand…</div>
+    </div>
+
+    <button class="spkbtn" id="spkbtn" disabled onclick="speakNow()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/>
+      </svg>
+      Speak Again
+    </button>
+
+    <!-- Sentence builder -->
+    <div class="sbcard">
+      <div class="cardtitle">
+        Sentence Builder
+        <div class="sbbtns">
+          <button class="sbbtn spk" onclick="speakSentence()">Speak</button>
+          <button class="sbbtn" onclick="backspaceSentence()">⌫</button>
+          <button class="sbbtn" onclick="clearSentence()">Clear</button>
+        </div>
+      </div>
+      <div class="sbrow">
+        <div id="sentence" style="color:var(--muted)">Signs will build here…</div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="histcard">
+      <div class="cardtitle">
+        Recognized Signs
+        <button class="clrbtn" onclick="clearHist()">Clear</button>
+      </div>
+      <div class="histlist" id="hl">
+        <span style="font-size:.71rem;color:var(--muted)">Signs appear here…</span>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instrcard">
+      <div class="irow"><div class="inum">1</div><div class="itxt">Click <b>Start Camera</b> and allow permission</div></div>
+      <div class="irow"><div class="inum">2</div><div class="itxt">Pick mode: <b>Alphabets</b>, <b>Numbers</b> or <b>Words</b></div></div>
+      <div class="irow"><div class="inum">3</div><div class="itxt">Make the ISL gesture — match the reference image</div></div>
+      <div class="irow"><div class="inum">4</div><div class="itxt"><b>Hold 1.5s</b> to confirm · <b>Click any image</b> to enlarge</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Reference panel with your ISL images -->
+<div class="refpanel">
+  <div class="refhdr">
+    <div class="reftitle" id="rt">Quick Reference — Alphabets</div>
+    <div class="img-badge" id="imgBadge">📸 Your ISL Images</div>
+  </div>
+  <div class="refgrid" id="rg"></div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// YOUR FIREBASE IMAGE BASE URL
+// Alphabets: {IMG_BASE}/Module/Alphabets/A.jpeg
+// Numbers:   {IMG_BASE}/Module/Numbers/1.jpeg
+// ─────────────────────────────────────────────
+const IMG_BASE = 'https://ignimagic-8e3a7.web.app';
+
+function getImgUrl(sign, m) {
+  if (m === 'alpha')   return `${IMG_BASE}/Module/Alphabets/${sign}.jpeg`;
+  if (m === 'numbers') return `${IMG_BASE}/Module/Numbers/${sign}.jpeg`;
+  return null; // Words don't have images
+}
+
+// ─────────────────────────────────────────────
+// GESTURE DATABASES
+// f: [thumb,index,middle,ring,pinky]
+// 1=extended  0=closed  -1=don't care
+// thu: true=thumb-up  false=not-up  null=any
+// sp:  true=spread    false=together null=any
+// special: 'o_shape' | 'c_shape' | 'claw'
+// ─────────────────────────────────────────────
+const ADB = {
+  'A': {f:[0,0,0,0,0],thu:false,sp:false,hint:'Closed fist, thumb side'},
+  'B': {f:[0,1,1,1,1],thu:false,sp:false,hint:'4 fingers up, thumb in'},
+  'C': {f:[-1,-1,-1,-1,-1],special:'c_shape',hint:'Curved C shape'},
+  'D': {f:[0,1,0,0,0],thu:false,sp:false,hint:'Index finger up only'},
+  'E': {f:[0,0,0,0,0],thu:false,sp:false,special:'claw',hint:'Bent claw hand'},
+  'F': {f:[0,0,1,1,1],thu:false,sp:false,hint:'Middle, ring, pinky up'},
+  'G': {f:[1,1,0,0,0],thu:false,sp:false,hint:'Thumb + index (L rotated)'},
+  'H': {f:[0,1,1,0,0],thu:false,sp:false,hint:'Index + middle together'},
+  'I': {f:[0,0,0,0,1],thu:false,hint:'Pinky finger up'},
+  'J': {f:[0,0,0,0,1],thu:true, hint:'Pinky up + thumb up'},
+  'K': {f:[1,1,1,0,0],thu:false,sp:false,hint:'Thumb+index+middle up'},
+  'L': {f:[1,1,0,0,0],thu:true, sp:false,hint:'L-shape, thumb up'},
+  'M': {f:[0,0,0,1,1],thu:false,hint:'Ring + pinky up'},
+  'N': {f:[0,0,1,0,0],thu:false,hint:'Middle finger only up'},
+  'O': {f:[-1,-1,-1,-1,-1],special:'o_shape',hint:'O-circle shape'},
+  'P': {f:[1,1,0,1,0],thu:false,hint:'Thumb+index+ring up'},
+  'Q': {f:[1,0,1,0,0],thu:false,hint:'Thumb + middle up'},
+  'R': {f:[0,1,1,0,0],thu:false,sp:true, hint:'V-sign spread wide'},
+  'S': {f:[0,0,0,0,0],thu:true, sp:false,hint:'Fist + thumb up'},
+  'T': {f:[1,0,0,0,0],thu:true, hint:'Thumb extended high'},
+  'U': {f:[0,1,1,0,0],thu:false,sp:false,hint:'Index+middle up (together)'},
+  'V': {f:[0,1,1,0,0],thu:false,sp:true, hint:'V-sign (spread)'},
+  'W': {f:[0,1,1,1,0],thu:false,hint:'Three middle fingers up'},
+  'X': {f:[0,0,0,1,0],thu:false,hint:'Ring finger up only'},
+  'Y': {f:[1,0,0,0,1],thu:false,hint:'Thumb + pinky out'},
+  'Z': {f:[0,1,0,0,0],thu:true, hint:'Index up + thumb up'},
+};
+
+const NDB = {
+  '0': {f:[-1,-1,-1,-1,-1],special:'o_shape',hint:'O-shape (circle)'},
+  '1': {f:[0,1,0,0,0],thu:false,hint:'Index finger up'},
+  '2': {f:[0,1,1,0,0],thu:false,sp:true, hint:'Peace / V-sign spread'},
+  '3': {f:[1,1,1,0,0],thu:false,sp:false,hint:'Thumb+index+middle'},
+  '4': {f:[0,1,1,1,1],thu:false,sp:false,hint:'4 fingers up (B-hand)'},
+  '5': {f:[1,1,1,1,1],thu:false,sp:true, hint:'Open hand spread'},
+  '6': {f:[1,0,0,0,1],thu:false,hint:'Thumb + pinky (Y-hand)'},
+  '7': {f:[0,0,1,1,1],thu:false,hint:'Middle+ring+pinky up'},
+  '8': {f:[0,1,0,1,1],thu:false,hint:'Index+ring+pinky up'},
+  '9': {f:[0,0,0,0,0],thu:true, hint:'Fist + thumb up'},
+};
+
+const WDB = {
+  'Hello':     {f:[1,1,1,1,1],sp:true, thu:false,hint:'Open spread wave'},
+  'Thank You': {f:[0,1,1,1,1],sp:false,thu:false,hint:'4-finger flat hand'},
+  'Yes':       {f:[0,0,0,0,0],thu:true, sp:false,hint:'Thumbs-up fist'},
+  'No':        {f:[0,1,1,0,0],sp:true, thu:false,hint:'V-sign waving'},
+  'Please':    {f:[1,1,1,1,0],sp:false,thu:false,hint:'4 fingers+thumb (no pinky)'},
+  'Sorry':     {f:[0,0,0,0,0],thu:false,sp:false,hint:'Closed fist'},
+  'Help':      {f:[1,0,0,0,0],thu:true, sp:false,hint:'Thumbs-up (hand raised)'},
+  'Good':      {f:[0,1,1,1,1],sp:false,thu:false,hint:'Flat B-hand forward'},
+  'Bad':       {f:[0,1,1,1,1],sp:true, thu:false,hint:'B-hand fingers spread'},
+  'Stop':      {f:[1,1,1,1,1],sp:false,thu:false,hint:'Flat palm stop'},
+  'Come':      {f:[0,1,0,0,1],sp:false,thu:false,hint:'Index+pinky (call sign)'},
+  'Go':        {f:[0,1,0,0,0],sp:false,thu:true, hint:'Index point + thumb up'},
+  'Water':     {f:[0,1,1,1,0],sp:false,thu:false,hint:'W-hand (3 fingers)'},
+  'Food':      {f:[0,0,1,1,0],sp:false,thu:false,hint:'Middle+ring to mouth'},
+  'Home':      {f:[1,1,0,1,1],sp:false,thu:false,hint:'Thumb+index+ring+pinky'},
+  'Mother':    {f:[1,1,1,1,1],sp:true, thu:true, hint:'Open spread + thumb up'},
+  'Father':    {f:[1,1,1,0,1],sp:false,thu:false,hint:'Thumb+idx+mid+pinky'},
+  'School':    {f:[0,1,0,1,0],sp:false,thu:false,hint:'Index + ring finger'},
+  'Book':      {f:[0,1,1,0,1],sp:false,thu:false,hint:'Idx+middle+pinky open'},
+  'Friend':    {f:[0,1,1,0,0],sp:false,thu:true, hint:'H-hand + thumb up'},
+  'Love':      {f:[1,0,0,0,1],sp:false,thu:false,hint:'Thumb+pinky (Y-hand)'},
+  'Happy':     {f:[1,1,0,1,0],sp:false,thu:false,hint:'Thumb+index+ring'},
+  'Sad':       {f:[1,0,1,0,0],sp:false,thu:false,hint:'Thumb + middle up'},
+  'Name':      {f:[0,1,1,0,0],sp:false,thu:false,hint:'Index+middle (H-hand)'},
+  'I / Me':    {f:[0,0,0,0,1],sp:false,thu:false,hint:'Pinky pointing self'},
+  'You':       {f:[0,1,0,0,0],sp:false,thu:false,hint:'Index pointing forward'},
+  'We':        {f:[0,1,1,1,0],sp:true, thu:false,hint:'W-hand sweep (spread)'},
+  'Time':      {f:[0,0,0,1,0],sp:false,thu:false,hint:'Ring finger (wrist tap)'},
+  'Day':       {f:[0,1,0,1,1],sp:false,thu:false,hint:'Index+ring+pinky up'},
+  'Night':     {f:[1,0,1,0,1],sp:false,thu:false,hint:'Thumb+middle+pinky'},
+  'Eat':       {f:[1,1,0,0,0],sp:false,thu:false,hint:'L-shape to mouth'},
+  'Drink':     {f:[-1,-1,-1,-1,-1],special:'c_shape',hint:'C-hand (cup gesture)'},
+  'Sleep':     {f:[0,0,0,1,1],sp:false,thu:false,hint:'Ring + pinky (sleep)'},
+  'Walk':      {f:[0,1,1,0,0],sp:false,thu:false,hint:'Index+middle (walking)'},
+  'Run':       {f:[0,1,1,0,0],sp:true, thu:false,hint:'V-hand (running)'},
+  'Sit':       {f:[0,1,1,1,1],sp:false,thu:false,hint:'B-hand bent down'},
+  'Stand':     {f:[1,1,1,0,1],sp:false,thu:false,hint:'Thumb+idx+mid+pinky'},
+  'Open':      {f:[1,1,1,1,1],sp:true, thu:true, hint:'Full open + thumb up'},
+  'Close':     {f:[1,1,0,0,0],sp:false,thu:false,hint:'Thumb+index (L-shape)'},
+  'Hot':       {f:[1,1,0,0,1],sp:false,thu:false,hint:'Thumb+index+pinky'},
+  'Cold':      {f:[1,0,1,1,0],sp:false,thu:false,hint:'Thumb+middle+ring'},
+  'Big':       {f:[1,0,0,0,0],sp:false,thu:false,hint:'Thumb sideways (big)'},
+  'Small':     {f:[0,0,0,0,1],sp:false,thu:true, hint:'Pinky + thumb up (small)'},
+  'Man':       {f:[1,1,1,0,1],sp:false,thu:true, hint:'Father-hand + thumb up'},
+  'Woman':     {f:[1,0,1,1,0],sp:false,thu:false,hint:'Thumb+middle+ring'},
+  'Child':     {f:[0,0,1,0,1],sp:false,thu:false,hint:'Middle + pinky (child)'},
+  'Doctor':    {f:[0,1,0,1,0],sp:false,thu:false,hint:'Index+ring (D-shape)'},
+  'Teacher':   {f:[1,0,0,1,1],sp:false,thu:false,hint:'Thumb+ring+pinky'},
+  'Money':     {f:[0,0,1,0,1],sp:false,thu:false,hint:'Middle+pinky (M-shape)'},
+  'Family':    {f:[1,0,0,1,0],sp:false,thu:false,hint:'Thumb + ring finger'},
+};
+
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let mode = 'alpha', mpReady = false, handsModel = null, camRunning = false;
+let curSign = null, holdT = null, confSign = null;
+let sentenceWords = [];
+const HOLD_MS = 1500, CONF_THR = 52, RING_CIRC = 213.6;
+
+const vid    = document.getElementById('vid');
+const cvs    = document.getElementById('cvs');
+const ctx2d  = cvs.getContext('2d');
+const stEl   = document.getElementById('st');
+const slEl   = document.getElementById('sl');
+const cfbar  = document.getElementById('cfbar');
+const cflbl  = document.getElementById('cflbl');
+const cffill = document.getElementById('cffill');
+const cfpct  = document.getElementById('cfpct');
+const hrEl   = document.getElementById('hr');
+const hcEl   = document.getElementById('hc');
+const dotEl  = document.getElementById('dot');
+const sttEl  = document.getElementById('statusTxt');
+const spkBtn = document.getElementById('spkbtn');
+const hlEl   = document.getElementById('hl');
+const sentEl = document.getElementById('sentence');
+const signImg= document.getElementById('signImg');
+
+// ─────────────────────────────────────────────
+// FEATURE EXTRACTION
+// ─────────────────────────────────────────────
+function features(lm) {
+  const wrist = lm[0];
+  // Thumb: distance-based (works for left and right hand)
+  const thumbExt = Math.hypot(lm[4].x-lm[2].x, lm[4].y-lm[2].y) >
+                   Math.hypot(lm[3].x-lm[2].x, lm[3].y-lm[2].y) * 1.08;
+  // Fingers: tip.y < pip.y means extended (y increases downward)
+  const idx  = lm[8].y  < lm[6].y  - 0.02;
+  const mid  = lm[12].y < lm[10].y - 0.02;
+  const ring = lm[16].y < lm[14].y - 0.02;
+  const pink = lm[20].y < lm[18].y - 0.02;
+  // Thumb pointing UP (tip above wrist level)
+  const thuUp  = lm[4].y < wrist.y - 0.09;
+  // Spread: distance between index tip and pinky tip
+  const spread = Math.hypot(lm[8].x-lm[20].x, lm[8].y-lm[20].y) > 0.17;
+  // C-shape: fingers curving (not fully open or closed)
+  const idxC  = lm[8].y > lm[5].y  && lm[8].y < lm[6].y  + 0.03;
+  const midC  = lm[12].y > lm[9].y  && lm[12].y < lm[10].y + 0.03;
+  const ringC = lm[16].y > lm[13].y && lm[16].y < lm[14].y + 0.03;
+  const cShape = idxC && midC && ringC && !idx && !mid && !ring;
+  // O-shape: index tip close to thumb tip
+  const oShape = Math.hypot(lm[8].x-lm[4].x, lm[8].y-lm[4].y) < 0.09 && !idx;
+  return { fingers:[thumbExt,idx,mid,ring,pink], thuUp, spread, cShape, oShape };
+}
+
+// ─────────────────────────────────────────────
+// GESTURE SCORING
+// ─────────────────────────────────────────────
+function score(feat, g) {
+  if (g.special === 'c_shape') return feat.cShape ? 88 : 8;
+  if (g.special === 'o_shape') return feat.oShape ? 90 : 8;
+  if (g.special === 'claw')    return (feat.fingers.slice(1).every(f=>!f)&&!feat.thuUp) ? 72 : 10;
+  let s = 0, mx = 0;
+  const fw = [14,20,20,20,20]; // finger weights
+  for (let i = 0; i < 5; i++) {
+    if (g.f[i] !== -1) {
+      mx += fw[i];
+      if (feat.fingers[i] === (g.f[i]===1)) s += fw[i];
+      else s -= Math.round(fw[i] * 0.4); // penalty for wrong state
+    }
+  }
+  if (g.thu != null) { mx+=10; if (feat.thuUp===g.thu) s+=10; else s-=6; }
+  if (g.sp  != null) { mx+=10; if (feat.spread===g.sp) s+=10; else s-=6; }
+  return mx > 0 ? Math.max(0, Math.round((s/mx)*100)) : 0;
+}
+
+function match(feat) {
+  const db = mode==='alpha' ? ADB : mode==='numbers' ? NDB : WDB;
+  let best = null, bestS = 0;
+  for (const [name, g] of Object.entries(db)) {
+    const sc = score(feat, g);
+    if (sc > bestS) { bestS = sc; best = name; }
+  }
+  return { name: best, conf: bestS };
+}
+
+// ─────────────────────────────────────────────
+// MEDIAPIPE SETUP
+// ─────────────────────────────────────────────
+function initMP() {
+  handsModel = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`
+  });
+  handsModel.setOptions({
+    maxNumHands: 1, modelComplexity: 1,
+    minDetectionConfidence: 0.65, minTrackingConfidence: 0.5
+  });
+  handsModel.onResults(onResults);
+  handsModel.initialize().then(() => {
+    mpReady = true;
+    document.getElementById('loadingOvl').classList.add('gone');
+    setTimeout(() => document.getElementById('loadingOvl').style.display='none', 600);
+    dotEl.className = 'dot'; sttEl.textContent = 'Ready';
+  }).catch(() => {
+    mpReady = true;
+    document.getElementById('loadingOvl').classList.add('gone');
+    setTimeout(() => document.getElementById('loadingOvl').style.display='none', 600);
+    dotEl.className = 'dot'; sttEl.textContent = 'Ready';
+  });
+}
+
+function onResults(res) {
+  const W = cvs.width, H = cvs.height;
+  ctx2d.save();
+  ctx2d.clearRect(0, 0, W, H);
+  // Mirror the video display (selfie view)
+  ctx2d.scale(-1, 1); ctx2d.translate(-W, 0);
+  ctx2d.drawImage(res.image, 0, 0, W, H);
+  ctx2d.restore();
+
+  if (res.multiHandLandmarks && res.multiHandLandmarks.length > 0) {
+    const lm = res.multiHandLandmarks[0];
+    // Draw hand skeleton (also mirrored)
+    ctx2d.save(); ctx2d.scale(-1,1); ctx2d.translate(-W,0);
+    if (typeof drawConnectors !== 'undefined') {
+      drawConnectors(ctx2d, lm, HAND_CONNECTIONS, {color:'rgba(0,180,216,0.6)', lineWidth:2});
+      drawLandmarks(ctx2d, lm, {color:'#00B4D8', fillColor:'rgba(255,159,28,0.8)', lineWidth:1, radius:3});
+    }
+    ctx2d.restore();
+    const feat = features(lm);
+    const {name, conf} = match(feat);
+    updateUI(name, conf);
+    dotEl.className = 'dot on'; sttEl.textContent = 'Detecting…';
+  } else {
+    cfbar.classList.remove('on');
+    dotEl.className = 'dot live'; sttEl.textContent = 'Camera live';
+    if (!confSign) { stEl.textContent='—'; stEl.className='signtxt'; slEl.textContent='No hand detected'; }
+    curSign = null; holdT = null;
+    hrEl.classList.remove('on'); hcEl.style.strokeDashoffset = RING_CIRC;
+  }
+}
+
+function updateUI(name, conf) {
+  if (!name || conf < CONF_THR) {
+    cfbar.classList.remove('on');
+    if (!confSign) { stEl.textContent='—'; stEl.className='signtxt'; slEl.textContent='Waiting for hand…'; }
+    curSign = null; holdT = null;
+    hrEl.classList.remove('on'); hcEl.style.strokeDashoffset = RING_CIRC;
+    return;
+  }
+  // Confidence bar
+  cfbar.classList.add('on'); cflbl.textContent = name;
+  cffill.style.width = conf+'%';
+  cffill.style.background = conf>80?'var(--green)':conf>65?'var(--teal)':'var(--saffron)';
+  cfpct.textContent = conf+'%';
+
+  if (name === curSign) {
+    const prog = Math.min((Date.now()-holdT)/HOLD_MS, 1);
+    hrEl.classList.add('on');
+    hcEl.style.strokeDashoffset = RING_CIRC - RING_CIRC*prog;
+    if (prog >= 1) { confirmSign(name); return; }
+    stEl.textContent = name; stEl.className = 'signtxt teal';
+    const rem = Math.ceil(((HOLD_MS-(Date.now()-holdT))/1000)*10)/10;
+    slEl.textContent = `Hold… ${rem}s`;
+  } else {
+    curSign = name; holdT = Date.now();
+    hrEl.classList.remove('on'); hcEl.style.strokeDashoffset = RING_CIRC;
+    stEl.textContent = name; stEl.className = 'signtxt';
+    slEl.textContent = 'Hold gesture for 1.5s';
+  }
+}
+
+function confirmSign(name) {
+  confSign = name; hrEl.classList.remove('on');
+  const col = mode==='alpha' ? 'teal' : mode==='numbers' ? 'grn' : 'sfn';
+  stEl.textContent = name; stEl.className = `signtxt ${col}`;
+  slEl.textContent = '✓ Confirmed — Speaking…';
+
+  // ── Show your Firebase reference image ──
+  const imgUrl = getImgUrl(name, mode);
+  if (imgUrl) {
+    signImg.src = imgUrl;
+    signImg.alt = name;
+    signImg.classList.add('show');
+  } else {
+    signImg.classList.remove('show');
+  }
+
+  addHist(name); addSentence(name); speak(name);
+  spkBtn.disabled = false;
+  setTimeout(() => {
+    curSign = null; holdT = null;
+    hcEl.style.strokeDashoffset = RING_CIRC;
+    slEl.textContent = 'Make next sign…';
+  }, 2200);
+}
+
+// ─────────────────────────────────────────────
+// LIGHTBOX (click image → full-size view)
+// ─────────────────────────────────────────────
+function openLightbox(sign, hint, m) {
+  const url = getImgUrl(sign, m);
+  if (!url) return;
+  document.getElementById('lb-img').src = url;
+  document.getElementById('lightbox-label').textContent = sign;
+  document.getElementById('lightbox-hint').textContent = hint;
+  document.getElementById('lightbox').classList.add('show');
+}
+function openImgLightbox() {
+  if (!confSign) return;
+  const db = ADB[confSign] || NDB[confSign] || WDB[confSign] || {};
+  openLightbox(confSign, db.hint || '', mode);
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('show'); }
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeLightbox(); });
+
+// ─────────────────────────────────────────────
+// TEXT-TO-SPEECH (Indian English voice)
+// ─────────────────────────────────────────────
+function speak(txt) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(txt);
+  u.lang = 'en-IN'; u.rate = 0.92; u.pitch = 1.0; u.volume = 1.0;
+  const voices = window.speechSynthesis.getVoices();
+  const v = voices.find(v => v.lang.includes('en-IN')) || voices.find(v => v.lang.startsWith('en'));
+  if (v) u.voice = v;
+  window.speechSynthesis.speak(u);
+}
+function speakNow() { if (confSign) speak(confSign); }
+function speakSentence() { if (sentenceWords.length) speak(sentenceWords.join(' ')); }
+
+// ─────────────────────────────────────────────
+// SENTENCE BUILDER
+// ─────────────────────────────────────────────
+function addSentence(word) {
+  if (sentenceWords.length === 0) sentEl.style.color = 'var(--text)';
+  sentenceWords.push(word); sentEl.textContent = sentenceWords.join(' ');
+}
+function backspaceSentence() {
+  sentenceWords.pop();
+  if (!sentenceWords.length) { sentEl.textContent='Signs will build here…'; sentEl.style.color='var(--muted)'; }
+  else sentEl.textContent = sentenceWords.join(' ');
+}
+function clearSentence() {
+  sentenceWords = []; sentEl.textContent = 'Signs will build here…'; sentEl.style.color = 'var(--muted)';
+}
+
+// ─────────────────────────────────────────────
+// HISTORY
+// ─────────────────────────────────────────────
+function addHist(name) {
+  const ph = hlEl.querySelector('span'); if (ph) hlEl.innerHTML = '';
+  const t = document.createElement('div');
+  t.className = 'htag'; t.textContent = name; t.title = 'Click to speak again';
+  t.onclick = () => speak(name); hlEl.prepend(t);
+  while (hlEl.children.length > 18) hlEl.removeChild(hlEl.lastChild);
+}
+function clearHist() {
+  hlEl.innerHTML = '<span style="font-size:.71rem;color:var(--muted)">Signs appear here…</span>';
+}
+
+// ─────────────────────────────────────────────
+// MODE SWITCH
+// ─────────────────────────────────────────────
+function setMode(m) {
+  mode = m; curSign = null; holdT = null; confSign = null;
+  signImg.classList.remove('show');
+  ['A','N','W'].forEach(id => {
+    const b = document.getElementById('btn'+id);
+    const cls = {'A':'mbtn a','N':'mbtn n','W':'mbtn w'}[id];
+    const mKey = {'A':'alpha','N':'numbers','W':'words'}[id];
+    b.className = cls + (m===mKey ? ' on' : '');
+  });
+  stEl.textContent = '—'; stEl.className = 'signtxt'; slEl.textContent = 'Waiting for hand…';
+  spkBtn.disabled = true;
+  // Hide image badge on Words mode (no images)
+  document.getElementById('imgBadge').style.display = (m==='words' ? 'none' : '');
+  buildRef();
+}
+
+// ─────────────────────────────────────────────
+// CAMERA
+// ─────────────────────────────────────────────
+async function startCam() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:'user', width:640, height:480 }
+    });
+    vid.srcObject = stream; vid.play();
+    document.getElementById('plt').style.display = 'none';
+    camRunning = true; dotEl.className = 'dot live'; sttEl.textContent = 'Camera live';
+    vid.onloadedmetadata = () => {
+      cvs.width  = vid.videoWidth  || 640;
+      cvs.height = vid.videoHeight || 480;
+    };
+    const cam = new Camera(vid, {
+      onFrame: async () => { if (mpReady && handsModel) await handsModel.send({image: vid}); },
+      width: 640, height: 480
+    });
+    cam.start();
+  } catch(e) {
+    alert('Camera access denied.\n\nNote: Camera requires https:// or localhost.\nOpen this file from your Firebase-hosted URL.');
+    console.error(e);
+  }
+}
+
+// ─────────────────────────────────────────────
+// REFERENCE PANEL — shows your Firebase images
+// ─────────────────────────────────────────────
+function buildRef() {
+  const db = mode==='alpha' ? ADB : mode==='numbers' ? NDB : WDB;
+  const titles = {
+    alpha:   'Quick Reference — Alphabets (A–Z)',
+    numbers: 'Quick Reference — Numbers (0–9)',
+    words:   'Quick Reference — 50 ISL Words'
+  };
+  document.getElementById('rt').textContent = titles[mode];
+  const grid = document.getElementById('rg'); grid.innerHTML = '';
+  const accent = mode==='alpha' ? 'var(--teal)' : mode==='numbers' ? 'var(--green)' : 'var(--saffron)';
+
+  for (const [sign, data] of Object.entries(db)) {
+    const d = document.createElement('div'); d.className = 'ritem';
+    const imgUrl = getImgUrl(sign, mode);
+
+    let topHtml = '';
+    if (imgUrl) {
+      // Show Firebase image thumbnail; fall back to letter placeholder on error
+      topHtml = `
+        <img class="rthumb" src="${imgUrl}" alt="${sign}" loading="lazy"
+          onerror="this.classList.add('hidden');this.nextElementSibling.style.display='flex'">
+        <div class="rthumb-placeholder" style="display:none">${sign}</div>`;
+    } else {
+      // Words: show styled letter placeholder
+      topHtml = `<div class="rthumb-placeholder">${sign.charAt(0)}</div>`;
+    }
+
+    d.innerHTML = `${topHtml}
+      <div class="rsign">${sign}</div>
+      <div class="rgesture">${data.hint}</div>`;
+
+    d.onclick = () => {
+      speak(sign);
+      d.style.borderColor = accent;
+      setTimeout(() => d.style.borderColor = '', 500);
+      if (imgUrl) openLightbox(sign, data.hint, mode); // click → full-size view
+    };
+    grid.appendChild(d);
+  }
+}
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  initMP();
+  buildRef();
+  setMode('alpha');
+  window.speechSynthesis.getVoices(); // preload voices
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+});
+</script>
+</body>
+</html>

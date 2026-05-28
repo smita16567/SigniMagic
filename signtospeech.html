@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>A-Z Sign Detection</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+
+  <style>
+    body{
+      margin:0;
+      padding:0;
+      background:#f2f5f9;
+      font-family:Arial;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+    }
+
+    .container{
+      width:700px;
+      background:white;
+      padding:20px;
+      border-radius:20px;
+      box-shadow:0 0 15px rgba(0,0,0,0.1);
+      text-align:center;
+    }
+
+    h1{
+      color:#333;
+    }
+
+    video, canvas{
+      width:100%;
+      border-radius:15px;
+      border:3px solid #007bff;
+    }
+
+    .output{
+      margin-top:20px;
+      background:#f1f1f1;
+      padding:20px;
+      border-radius:15px;
+    }
+
+    #letter{
+      font-size:50px;
+      color:green;
+      font-weight:bold;
+    }
+
+    button{
+      margin-top:15px;
+      padding:12px 20px;
+      background:#007bff;
+      color:white;
+      border:none;
+      border-radius:10px;
+      cursor:pointer;
+      font-size:16px;
+    }
+
+    button:hover{
+      background:#0056b3;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <h1>A-Z Sign Language Detection</h1>
+
+  <video id="video" autoplay playsinline style="display:none;"></video>
+
+  <canvas id="canvas"></canvas>
+
+  <div class="output">
+    <h2>Detected Letter</h2>
+    <div id="letter">-</div>
+
+    <button onclick="speakLetter()">Speak</button>
+  </div>
+
+</div>
+
+<script>
+
+const videoElement = document.getElementById('video');
+const canvasElement = document.getElementById('canvas');
+const canvasCtx = canvasElement.getContext('2d');
+
+const letterBox = document.getElementById('letter');
+
+let detectedLetter = "-";
+
+canvasElement.width = 640;
+canvasElement.height = 480;
+
+function speakLetter(){
+  const speech = new SpeechSynthesisUtterance(detectedLetter);
+  speech.lang = "en-US";
+  window.speechSynthesis.speak(speech);
+}
+
+// Simple Gesture Rules
+function detectLetter(landmarks){
+
+  const thumbTip = landmarks[4];
+  const indexTip = landmarks[8];
+  const middleTip = landmarks[12];
+  const ringTip = landmarks[16];
+  const pinkyTip = landmarks[20];
+
+  // A
+  if(
+    indexTip.y > landmarks[6].y &&
+    middleTip.y > landmarks[10].y &&
+    ringTip.y > landmarks[14].y &&
+    pinkyTip.y > landmarks[18].y
+  ){
+    return "A";
+  }
+
+  // B
+  if(
+    indexTip.y < landmarks[6].y &&
+    middleTip.y < landmarks[10].y &&
+    ringTip.y < landmarks[14].y &&
+    pinkyTip.y < landmarks[18].y
+  ){
+    return "B";
+  }
+
+  // C
+  if(
+    Math.abs(indexTip.x - thumbTip.x) < 0.15
+  ){
+    return "C";
+  }
+
+  // D
+  if(
+    indexTip.y < landmarks[6].y &&
+    middleTip.y > landmarks[10].y &&
+    ringTip.y > landmarks[14].y
+  ){
+    return "D";
+  }
+
+  // I
+  if(
+    pinkyTip.y < landmarks[18].y &&
+    indexTip.y > landmarks[6].y
+  ){
+    return "I";
+  }
+
+  // L
+  if(
+    thumbTip.x < landmarks[3].x &&
+    indexTip.y < landmarks[6].y
+  ){
+    return "L";
+  }
+
+  // V
+  if(
+    indexTip.y < landmarks[6].y &&
+    middleTip.y < landmarks[10].y &&
+    ringTip.y > landmarks[14].y &&
+    pinkyTip.y > landmarks[18].y
+  ){
+    return "V";
+  }
+
+  // Y
+  if(
+    thumbTip.x < landmarks[3].x &&
+    pinkyTip.y < landmarks[18].y
+  ){
+    return "Y";
+  }
+
+  return "Unknown";
+}
+
+function onResults(results){
+
+  canvasCtx.save();
+
+  canvasCtx.clearRect(
+    0,
+    0,
+    canvasElement.width,
+    canvasElement.height
+  );
+
+  canvasCtx.drawImage(
+    results.image,
+    0,
+    0,
+    canvasElement.width,
+    canvasElement.height
+  );
+
+  if(results.multiHandLandmarks){
+
+    for(const landmarks of results.multiHandLandmarks){
+
+      drawConnectors(
+        canvasCtx,
+        landmarks,
+        HAND_CONNECTIONS,
+        {color:'#00FF00', lineWidth:4}
+      );
+
+      drawLandmarks(
+        canvasCtx,
+        landmarks,
+        {color:'#FF0000', lineWidth:2}
+      );
+
+      detectedLetter = detectLetter(landmarks);
+
+      letterBox.innerText = detectedLetter;
+    }
+  }
+
+  canvasCtx.restore();
+}
+
+const hands = new Hands({
+  locateFile: (file) => {
+    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+  }
+});
+
+hands.setOptions({
+  maxNumHands:1,
+  modelComplexity:1,
+  minDetectionConfidence:0.7,
+  minTrackingConfidence:0.7
+});
+
+hands.onResults(onResults);
+
+const camera = new Camera(videoElement,{
+  onFrame: async () => {
+    await hands.send({image: videoElement});
+  },
+  width:640,
+  height:480
+});
+
+camera.start();
+
+</script>
+
+</body>
+</html>
+
+

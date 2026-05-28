@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning</title>
+<!-- ✅ NEW: PWA Support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00c6ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f4f6f9;
+}
+
+/* Header */
+.header {
+    background: #4CAF50;
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Section */
+.section {
+    padding: 20px;
+}
+
+/* Cards */
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    width: 180px;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+/* Progress */
+.progress {
+    margin: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Header -->
+<div class="header">
+    <button onclick="goDashboard()">⬅ Dashboard</button>
+    <h2>📚 Learning</h2>
+    <button onclick="openSettings()">⚙️</button>
+</div>
+
+<!-- 🟢 Beginner -->
+<div class="section">
+<h3>🟢 Beginner</h3>
+<div class="card-container">
+    <div class="card" onclick="openAlphabet()">🔤 Alphabets</div>
+    <div class="card" onclick="openNumbers()">🔢 Numbers</div>
+</div>
+</div>
+
+<!-- 🟡 Intermediate -->
+<div class="section">
+<h3>🟡 Intermediate</h3>
+<div class="card-container">
+    <div class="card" onclick="openWords()">📝 Words</div>
+    <div class="card" onclick="openSentences()">💬 Sentences</div>
+</div>
+</div>
+
+<!-- 🔴 Advanced -->
+<div class="section">
+<h3>🔴 Advanced</h3>
+<div class="card-container">
+    <div class="card" onclick="openQuiz()">🎯 Quiz</div>
+    <div class="card" onclick="openPractice()">🏆 Practice</div>
+</div>
+</div>
+
+<!-- 📊 Progress -->
+<div class="progress">
+<h3>📊 Your Progress</h3>
+<p id="progressText">Completed: 0</p>
+<p id="scoreText">Score: 0</p>
+<button onclick="resetProgress()">Reset</button>
+</div>
+
+<script>
+// Navigation
+function goDashboard() {
+    window.location.href = "dashboard.html";
+}
+
+function openSettings() {
+    window.location.href = "setting.html";
+}
+
+function openAlphabet() {
+    window.location.href = "alphabet.html";
+}
+
+function openNumbers() {
+    window.location.href = "numbers.html";
+}
+
+function openWords() {
+    window.location.href = "words.html";
+}
+
+function openSentences() {
+    window.location.href = "sentences.html";
+}
+
+function openQuiz() {
+    window.location.href = "alphabet.html";
+}
+
+function openPractice() {
+    alert("Practice module coming soon");
+}
+
+// Load Progress
+function loadData() {
+    let progress = localStorage.getItem("progress") || 0;
+    let score = localStorage.getItem("score") || 0;
+
+    document.getElementById("progressText").innerText = "Completed: " + progress;
+    document.getElementById("scoreText").innerText = "Score: " + score;
+}
+
+window.onload = loadData;
+
+// Reset
+function resetProgress() {
+    localStorage.clear();
+    alert("Progress Reset!");
+    loadData();
+}
+
+function openAlphabet() {
+    window.location.href = "alphabets.html";
+}
+function openNumbers() {
+    window.location.href = "numbers.html";
+}
+function openWords() {
+    window.location.href = "words.html";
+}
+function openSentences() {
+    window.location.href = "sentences.html";
+}
+function openQuiz() {
+    window.location.href = "quiz.html";
+}
+function openPractice() {
+    window.location.href = "practice.html";
+}
+</script>
+ </body>
+
+<!-- ✅ NEW: Service Worker Registration -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+</script>
+</body>
+</html>
